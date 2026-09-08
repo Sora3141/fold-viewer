@@ -1,0 +1,22 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>展開図フォールディング</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
+<style>
+:root{--bg:#eef0f3;--ink:#1b2027;--muted:#5f6772;--line:#c9ced6;--card:#fff;--accent:#c8332b}
+@media (prefers-color-scheme:dark){:root{--bg:#15181d;--ink:#e8eaee;--muted:#9aa3ad;--line:#2c323a;--card:#1c2026;--accent:#e0554a}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif}
+main{max-width:880px;margin:0 auto;padding:48px 20px}
+h1{font-size:26px;margin:0 0 6px} .lead{color:var(--muted);margin:0 0 32px;max-width:60ch;line-height:1.7}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;color:inherit;text-decoration:none;line-height:1.6}
+.card:hover{border-color:var(--accent)} .card h2{font-size:18px;margin:0 0 4px} .card .sub{color:var(--muted);font-size:13px;margin:0 0 10px} .card p{margin:0;font-size:14px}
+footer{color:var(--muted);font-size:12px;margin-top:40px;line-height:1.7}
+</style></head><body><main>
+<h1>展開図フォールディング</h1>
+<p class="lead">一枚のポリオミノが複数の立体に折れる「共通展開図」を，折り目の角度を一斉に動かして 3D で見せるページ集。JAIST 上原研究室での展開図研究（同じ箱の多重折り，箱・開いた箱・ポリキューブの共通展開図）から，見せたい例を順に追加していく。</p>
+<div class="grid">
+<a class="card" href="cross_sqrt5_5.html"><h2>十字と√5の共通展開図</h2><p class="sub">十字ポリキューブ（立方体 7 個）と √5 立方体の共通展開図（例 #5）— 面積 30</p><p>中心の立方体の 6 面に立方体を付けた十字ポリキューブと，辺が √5 の立方体（折り線が対角に走る）は表面積がともに 30。両方に折れる 699 個の展開図のうちの 1 つ。</p></a>
+<a class="card" href="tetra6.html"><h2>六つのテトラキューブ</h2><p class="sub">立方体 4 個の立体（表面積 18）6 種すべてに折れる展開図 — 141 個のうちの 1 つ</p><p>立方体 4 個でできる立体は O 型を除く 7 種（鏡像を同一視して 6 種）がすべて表面積 18。6 種すべてに折れる展開図が 141 個あり，これはそのうち折り方の合計が最多（15 通り）のもの。</p></a>
+</div>
+<footer>操作：ドラッグで回転，ホイールで拡大，下のスライダーで折り進み。折り切った形が探索で得た面配置と一致することを数値的に確認したデータを使っている。途中の形は全折り目を同時に回しているだけなので，面がすれ違うことがある。</footer>
+</main></body></html>
