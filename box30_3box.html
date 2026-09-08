@@ -44,7 +44,7 @@ label.opt{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mut
   <h1>一枚の展開図，三つの箱に四通り<small>1×1×7，1×3×3（2 通り），√5 立方体に折れる面積 30 の展開図</small></h1>
   <div class="chips" id="chips"></div>
 </div>
-<div class="legend" id="legend">ドラッグで回転、ホイールで拡大。折り目の角度を 0 から目標値まで一斉に動かしているので、途中で面が重なって見えることがあります。</div>
+<div class="legend" id="legend">ドラッグで回転、ホイールで拡大。赤い線がいま折る折り目、薄い線は他の折り方で使う折り目（この折り方では平ら）。折り目の角度を 0 から目標値まで一斉に動かしているので、途中で面が重なって見えることがあります。</div>
 <div class="bar" id="bottom">
   <button class="play" id="play">再生</button>
   <input type="range" id="t" min="0" max="1000" value="0" aria-label="折り進み">
@@ -67,9 +67,31 @@ const panels=DATA.panels.map((p,i)=>{
   const geo=new T.ShapeGeometry(shape);
   const mat=new T.MeshBasicMaterial({color:0xffffff,side:T.DoubleSide});   // flat colour, no lighting
   const mesh=new T.Mesh(geo,mat); mesh.matrixAutoUpdate=false;
-  const edge=new T.LineSegments(new T.EdgesGeometry(geo),new T.LineBasicMaterial({color:0x1b2027,transparent:true,opacity:0.9})); edge.matrixAutoUpdate=false;
-  group.add(mesh); group.add(edge); return {mesh,edge,poly:p.poly};
+  const mk=(color,op,lw)=>{ const l=new T.LineSegments(new T.BufferGeometry(),new T.LineBasicMaterial({color,transparent:true,opacity:op,linewidth:lw})); l.matrixAutoUpdate=false; group.add(l); return l; };
+  const edge={bnd:mk(0x1b2027,0.95,1),crease:mk(0xc8332b,0.95,1),flat:mk(0x1b2027,0.18,1)};
+  group.add(mesh); return {mesh,edge,poly:p.poly};
 });
+// ---- edge classification: boundary / crease (folded in the current target) / flat (coplanar in the current target)
+const EPS=1e-6;
+function onSeg(m,a,b){ const cr=(b[0]-a[0])*(m[1]-a[1])-(b[1]-a[1])*(m[0]-a[0]); if(Math.abs(cr)>1e-6) return false;
+  return Math.min(a[0],b[0])-1e-6<=m[0]&&m[0]<=Math.max(a[0],b[0])+1e-6&&Math.min(a[1],b[1])-1e-6<=m[1]&&m[1]<=Math.max(a[1],b[1])+1e-6; }
+const panelEdges=DATA.panels.map((p,i)=>{ const n=p.poly.length; return p.poly.map((v,k)=>({a:v,b:p.poly[(k+1)%n],partner:-1})); });
+for(let i=0;i<panelEdges.length;i++) for(const e of panelEdges[i]){ const m=[(e.a[0]+e.b[0])/2,(e.a[1]+e.b[1])/2];
+  outer: for(let j=0;j<panelEdges.length;j++){ if(j===i) continue; for(const f of panelEdges[j]){ if(onSeg(m,f.a,f.b)&&onSeg(e.a,f.a,f.b)&&onSeg(e.b,f.a,f.b)||onSeg(m,f.a,f.b)&&onSeg(f.a,e.a,e.b)&&onSeg(f.b,e.a,e.b)){ e.partner=j; break outer; } } } }
+function normalOf(poly3){ const [a,b,c]=[poly3[0],poly3[1],poly3[2]]; const u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]], v=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
+  const n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]]; const L=Math.hypot(...n)||1; return n.map(x=>x/L); }
+function classifyEdges(ti){
+  const T3=DATA.targets[ti].target3d; const N=T3.map(normalOf);
+  panels.forEach((p,i)=>{ const sets={bnd:[],crease:[],flat:[]};
+    for(const e of panelEdges[i]){ let kind='bnd';
+      if(e.partner>=0){ const a=N[i],b=N[e.partner]; const dot=a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+        // coplanar iff normals parallel and the partner's centroid lies in this panel's plane
+        const c=T3[e.partner][0], p0=T3[i][0]; const d=(c[0]-p0[0])*a[0]+(c[1]-p0[1])*a[1]+(c[2]-p0[2])*a[2];
+        kind=(Math.abs(dot-1)<1e-6&&Math.abs(d)<1e-6)?'flat':'crease'; }
+      sets[kind].push(e.a[0],e.a[1],0,e.b[0],e.b[1],0); }
+    for(const k in sets){ p.edge[k].geometry.dispose(); const g=new T.BufferGeometry(); g.setAttribute('position',new T.Float32BufferAttribute(sets[k],3)); p.edge[k].geometry=g; }
+  });
+}
 // flat layout centre
 let cx=0,cy=0,n=0; DATA.cells.forEach(c=>{cx+=c[0]+0.5;cy+=c[1]+0.5;n++}); cx/=n; cy/=n;
 const ext=Math.max(...DATA.cells.map(c=>Math.max(Math.abs(c[0]+0.5-cx),Math.abs(c[1]+0.5-cy))))+1;
@@ -80,7 +102,7 @@ const chips=document.getElementById('chips');
 DATA.targets.forEach((tg,i)=>{ const b=document.createElement('button'); b.className='chip'; b.textContent=tg.label; b.setAttribute('aria-pressed',i===0); b.onclick=()=>{setTarget(i); t=0; dir=1; phase='fold'; playing=true; playBtn.textContent='一時停止';}; chips.appendChild(b); });
 const colorsEl=document.getElementById('colors'); const PLAIN='#f4f3ee';
 function applyColors(){ const cols=DATA.targets[target].colors; panels.forEach((p,k)=>p.mesh.material.color.set(colorsEl.checked?cols[k]:PLAIN)); }
-function setTarget(i){ target=i; [...chips.children].forEach((c,j)=>c.setAttribute('aria-pressed',j===i)); applyColors(); }
+function setTarget(i){ target=i; [...chips.children].forEach((c,j)=>c.setAttribute('aria-pressed',j===i)); applyColors(); classifyEdges(i); }
 colorsEl.addEventListener('change',applyColors);
 setTarget(0);
 const M=DATA.panels.map(()=>new T.Matrix4()); const tmpA=new T.Matrix4(), tmpB=new T.Matrix4(), v0=new T.Vector3(), v1=new T.Vector3(), ax=new T.Vector3();
@@ -95,14 +117,14 @@ function pose(tt){
   const cen=new T.Vector3(); let k=0; const vv=new T.Vector3();
   panels.forEach((p,i)=>{ for(const v of p.poly){ vv.set(v[0],v[1],0).applyMatrix4(M[i]); cen.add(vv); k++; } }); cen.multiplyScalar(1/k);
   const shift=new T.Matrix4().makeTranslation(-cen.x,-cen.y,-cen.z);
-  panels.forEach((p,i)=>{ p.mesh.matrix.multiplyMatrices(shift,M[i]); p.edge.matrix.copy(p.mesh.matrix); });
+  panels.forEach((p,i)=>{ p.mesh.matrix.multiplyMatrices(shift,M[i]); for(const k in p.edge) p.edge[k].matrix.copy(p.mesh.matrix); });
 }
 // camera & orbit
 let yaw=0.6, pitch=0.55, dist=1; const fitDist=()=>ext*1.3/(Math.tan(camera.fov*Math.PI/360)*Math.min(1,camera.aspect)); function cam(){ camera.position.set(dist*Math.cos(pitch)*Math.sin(yaw),dist*Math.sin(pitch),dist*Math.cos(pitch)*Math.cos(yaw)); camera.lookAt(0,0,0); }
 // pointer handling: 1 finger/mouse = rotate, 2 fingers = pinch zoom (touch-action:none keeps the page from scrolling)
 const ptrs=new Map(); let pinch0=null;
 const el=renderer.domElement;
-el.addEventListener('pointerdown',e=>{ e.preventDefault(); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); el.setPointerCapture(e.pointerId); if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinch0={d:Math.hypot(a.x-b.x,a.y-b.y),dist}; } });
+el.addEventListener('pointerdown',e=>{ e.preventDefault(); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); try{ el.setPointerCapture(e.pointerId); }catch(_){} if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinch0={d:Math.hypot(a.x-b.x,a.y-b.y),dist}; } });
 el.addEventListener('pointermove',e=>{ if(!ptrs.has(e.pointerId)) return; e.preventDefault();
   if(ptrs.size===1){ const p=ptrs.get(e.pointerId); yaw-=(e.clientX-p.x)*0.008; pitch=Math.max(-1.4,Math.min(1.4,pitch+(e.clientY-p.y)*0.008)); }
   ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
