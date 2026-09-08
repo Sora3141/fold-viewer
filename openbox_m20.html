@@ -1,0 +1,126 @@
+<title>ふたの無い箱と√2の箱</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#eef0f3; --bg2:#e2e5ea; --ink:#1b2027; --muted:#5f6772; --line:#c9ced6;
+  --panel:#ffffffcc; --accent:#c8332b; --accent-ink:#ffffff; --chip:#ffffff; --chip-on:#1b2027;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181d; --bg2:#0f1114; --ink:#e8eaee; --muted:#9aa3ad; --line:#2c323a;
+    --panel:#1c2026dd; --accent:#e0554a; --accent-ink:#ffffff; --chip:#22272e; --chip-on:#e8eaee;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181d; --bg2:#0f1114; --ink:#e8eaee; --muted:#9aa3ad; --line:#2c323a;
+  --panel:#1c2026dd; --accent:#e0554a; --accent-ink:#ffffff; --chip:#22272e; --chip-on:#e8eaee;
+}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;overflow:hidden}
+#stage{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 60%,var(--bg) 0%,var(--bg2) 100%)}
+#stage canvas{display:block;outline:none}
+.bar{position:fixed;left:0;right:0;display:flex;align-items:center;gap:14px;padding:12px 18px;pointer-events:none}
+.bar > *{pointer-events:auto}
+#top{top:0;justify-content:space-between}
+#bottom{bottom:0;background:linear-gradient(to top,var(--bg) 60%,transparent);padding-top:28px;flex-wrap:wrap}
+h1{font-size:15px;font-weight:700;margin:0;letter-spacing:.02em}
+h1 small{display:block;font-weight:500;color:var(--muted);font-size:12px;margin-top:2px}
+.chips{display:flex;gap:8px}
+.chip{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--chip-on);color:var(--bg);border-color:var(--chip-on)}
+.chip:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#state{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;color:var(--muted);min-width:14em}
+#state b{color:var(--ink);font-weight:500}
+button.play{background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:8px 16px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+input[type=range]{width:min(360px,50vw);accent-color:var(--accent)}
+label.opt{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.legend{position:fixed;right:18px;top:64px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--muted);max-width:240px;line-height:1.5}
+@media (max-width:640px){ .legend{display:none} h1 small{display:none} }
+@media (prefers-reduced-motion: reduce){ body{--dur:0} }
+</style>
+<div id="stage"></div>
+<div class="bar" id="top">
+  <h1>開いた箱に三通り，閉じた箱に一通り<small>底 1×2・高さ 3 のふたの無い箱に 3 通り，√2×√2×2√2 の閉じた箱に 1 通り折れる面積 20 の展開図</small></h1>
+  <div class="chips" id="chips"></div>
+</div>
+<div class="legend" id="legend">ドラッグで回転、ホイールで拡大。折り目の角度を 0 から目標値まで一斉に動かしているので、途中で面が重なって見えることがあります。</div>
+<div class="bar" id="bottom">
+  <button class="play" id="play">再生</button>
+  <input type="range" id="t" min="0" max="1000" value="0" aria-label="折り進み">
+  <span id="state"><b>—</b></span>
+  <label class="opt"><input type="checkbox" id="loop" checked> 自動で往復</label>
+  <label class="opt"><input type="checkbox" id="colors" checked> 面に色</label>
+  <label class="opt">速さ <input type="range" id="speed" min="1" max="10" value="6" style="width:90px" aria-label="速さ"></label>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const DATA={"title": "開いた箱に 3 通り＋閉じた箱に 1 通り", "cells": [[6, 0], [6, 1], [5, 1], [5, 2], [4, 2], [3, 2], [2, 2], [2, 3], [1, 3], [0, 3], [0, 2], [3, 3], [4, 3], [5, 3], [7, 1], [7, 2], [8, 1], [9, 1], [9, 0], [10, 1]], "panels": [{"poly": [[7.0, 0.0], [7.0, 1.0], [6.0, 1.0]]}, {"poly": [[6.0, 0.0], [7.0, 0.0], [6.0, 1.0]]}, {"poly": [[6.0, 1.0], [7.0, 2.0], [6.0, 2.0]]}, {"poly": [[6.0, 1.0], [7.0, 1.0], [7.0, 2.0]]}, {"poly": [[6.0, 1.0], [6.0, 2.0], [5.0, 2.0]]}, {"poly": [[5.0, 1.0], [6.0, 1.0], [5.0, 2.0]]}, {"poly": [[5.0, 2.0], [6.0, 3.0], [5.0, 3.0]]}, {"poly": [[5.0, 2.0], [6.0, 2.0], [6.0, 3.0]]}, {"poly": [[5.0, 2.0], [5.0, 3.0], [4.0, 3.0]]}, {"poly": [[4.0, 2.0], [5.0, 2.0], [4.0, 3.0]]}, {"poly": [[3.0, 2.0], [4.0, 2.0], [4.0, 3.0], [3.0, 3.0]]}, {"poly": [[3.0, 2.0], [3.0, 3.0], [2.0, 3.0]]}, {"poly": [[2.0, 2.0], [3.0, 2.0], [2.0, 3.0]]}, {"poly": [[2.0, 3.0], [3.0, 4.0], [2.0, 4.0]]}, {"poly": [[2.0, 3.0], [3.0, 3.0], [3.0, 4.0]]}, {"poly": [[2.0, 3.0], [2.0, 4.0], [1.0, 4.0]]}, {"poly": [[1.0, 3.0], [2.0, 3.0], [1.0, 4.0]]}, {"poly": [[0.0, 3.0], [1.0, 4.0], [0.0, 4.0]]}, {"poly": [[0.0, 3.0], [1.0, 3.0], [1.0, 4.0]]}, {"poly": [[0.0, 2.0], [1.0, 2.0], [1.0, 3.0], [0.0, 3.0]]}, {"poly": [[4.0, 3.0], [4.0, 4.0], [3.0, 4.0]]}, {"poly": [[3.0, 3.0], [4.0, 3.0], [3.0, 4.0]]}, {"poly": [[4.0, 3.0], [5.0, 3.0], [5.0, 4.0], [4.0, 4.0]]}, {"poly": [[6.0, 3.0], [6.0, 4.0], [5.0, 4.0]]}, {"poly": [[5.0, 3.0], [6.0, 3.0], [5.0, 4.0]]}, {"poly": [[8.0, 1.0], [8.0, 2.0], [7.0, 2.0]]}, {"poly": [[7.0, 1.0], [8.0, 1.0], [7.0, 2.0]]}, {"poly": [[7.0, 2.0], [8.0, 3.0], [7.0, 3.0]]}, {"poly": [[7.0, 2.0], [8.0, 2.0], [8.0, 3.0]]}, {"poly": [[8.0, 1.0], [9.0, 1.0], [9.0, 2.0], [8.0, 2.0]]}, {"poly": [[10.0, 1.0], [10.0, 2.0], [9.0, 2.0]]}, {"poly": [[9.0, 1.0], [10.0, 1.0], [9.0, 2.0]]}, {"poly": [[9.0, 0.0], [10.0, 1.0], [9.0, 1.0]]}, {"poly": [[9.0, 0.0], [10.0, 0.0], [10.0, 1.0]]}, {"poly": [[10.0, 1.0], [11.0, 2.0], [10.0, 2.0]]}, {"poly": [[10.0, 1.0], [11.0, 1.0], [11.0, 2.0]]}], "parent": [-1, 0, 3, 0, 2, 4, 7, 4, 6, 8, 9, 10, 11, 14, 21, 13, 15, 18, 16, 18, 22, 20, 24, 24, 6, 26, 3, 28, 25, 25, 31, 29, 31, 32, 30, 34], "hinge": [[[0, 0], [0, 0]], [[6.0, 1.0], [7.0, 0.0]], [[6.0, 1.0], [7.0, 2.0]], [[6.0, 1.0], [7.0, 1.0]], [[6.0, 1.0], [6.0, 2.0]], [[5.0, 2.0], [6.0, 1.0]], [[5.0, 2.0], [6.0, 3.0]], [[5.0, 2.0], [6.0, 2.0]], [[5.0, 2.0], [5.0, 3.0]], [[4.0, 3.0], [5.0, 2.0]], [[4.0, 2.0], [4.0, 3.0]], [[3.0, 2.0], [3.0, 3.0]], [[2.0, 3.0], [3.0, 2.0]], [[2.0, 3.0], [3.0, 4.0]], [[3.0, 3.0], [3.0, 4.0]], [[2.0, 3.0], [2.0, 4.0]], [[1.0, 4.0], [2.0, 3.0]], [[0.0, 3.0], [1.0, 4.0]], [[1.0, 3.0], [1.0, 4.0]], [[0.0, 3.0], [1.0, 3.0]], [[4.0, 3.0], [4.0, 4.0]], [[3.0, 4.0], [4.0, 3.0]], [[5.0, 3.0], [5.0, 4.0]], [[5.0, 4.0], [6.0, 3.0]], [[5.0, 3.0], [6.0, 3.0]], [[7.0, 2.0], [8.0, 1.0]], [[7.0, 1.0], [7.0, 2.0]], [[7.0, 2.0], [8.0, 3.0]], [[7.0, 2.0], [8.0, 2.0]], [[8.0, 1.0], [8.0, 2.0]], [[9.0, 2.0], [10.0, 1.0]], [[9.0, 1.0], [9.0, 2.0]], [[9.0, 1.0], [10.0, 1.0]], [[9.0, 0.0], [10.0, 1.0]], [[10.0, 1.0], [10.0, 2.0]], [[10.0, 1.0], [11.0, 2.0]]], "order": [0, 3, 1, 26, 2, 25, 4, 29, 28, 7, 5, 31, 27, 6, 32, 30, 24, 8, 33, 34, 23, 22, 9, 35, 20, 10, 21, 11, 14, 12, 13, 15, 16, 18, 19, 17], "targets": [{"label": "底1×2・高さ3 折り方 A", "theta": [0.0, 0.0, 0.0, -1.5707963267948966, -1.5707963267948966, 0.0, 0.0, 0.0, -1.5707963267948966, 0.0, 0.0, -1.5707963267948966, 0.0, 0.0, -1.5707963267948966, -1.5707963267948966, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.5707963267948966, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5707963267948966, 0.0, 1.5707963267948966, 1.5707963267948966, 0.0, 0.0, 0.0], "colors": ["#c6dcf5", "#c6dcf5", "#fde2b3", "#fde2b3", "#fff5b0", "#fff5b0", "#fff5b0", "#fff5b0", "#f9c9c9", "#f9c9c9", "#f9c9c9", "#cdebd0", "#cdebd0", "#cdebd0", "#cdebd0", "#fde2b3", "#fde2b3", "#fde2b3", "#fde2b3", "#fde2b3", "#f9c9c9", "#f9c9c9", "#f9c9c9", "#fff5b0", "#fff5b0", "#fde2b3", "#fde2b3", "#fde2b3", "#fde2b3", "#cdebd0", "#f9c9c9", "#f9c9c9", "#c6dcf5", "#c6dcf5", "#f9c9c9", "#f9c9c9"], "target3d": [[[0.0, 2.0, 0.0], [2.0, 2.0, 0.0], [2.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 2.0, 0.0], [2.0, 0.0, 0.0]], [[2.0, 0.0, 0.0], [2.0, 2.0, 2.0], [2.0, 0.0, 2.0]], [[2.0, 0.0, 0.0], [2.0, 2.0, 0.0], [2.0, 2.0, 2.0]], [[2.0, 0.0, 0.0], [2.0, 0.0, 2.0], [0.0, 0.0, 2.0]], [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 0.0, 2.0]], [[0.0, 0.0, 2.0], [2.0, 0.0, 4.0], [0.0, 0.0, 4.0]], [[0.0, 0.0, 2.0], [2.0, 0.0, 2.0], [2.0, 0.0, 4.0]], [[0.0, 0.0, 2.0], [0.0, 0.0, 4.0], [0.0, 2.0, 4.0]], [[0.0, 2.0, 2.0], [0.0, 0.0, 2.0], [0.0, 2.0, 4.0]], [[0.0, 4.0, 2.0], [0.0, 2.0, 2.0], [0.0, 2.0, 4.0], [0.0, 4.0, 4.0]], [[0.0, 4.0, 2.0], [0.0, 4.0, 4.0], [2.0, 4.0, 4.0]], [[2.0, 4.0, 2.0], [0.0, 4.0, 2.0], [2.0, 4.0, 4.0]], [[2.0, 4.0, 4.0], [0.0, 4.0, 6.0], [2.0, 4.0, 6.0]], [[2.0, 4.0, 4.0], [0.0, 4.0, 4.0], [0.0, 4.0, 6.0]], [[2.0, 4.0, 4.0], [2.0, 4.0, 6.0], [2.0, 2.0, 6.0]], [[2.0, 2.0, 4.0], [2.0, 4.0, 4.0], [2.0, 2.0, 6.0]], [[2.0, 0.0, 4.0], [2.0, 2.0, 6.0], [2.0, 0.0, 6.0]], [[2.0, 0.0, 4.0], [2.0, 2.0, 4.0], [2.0, 2.0, 6.0]], [[2.0, 0.0, 2.0], [2.0, 2.0, 2.0], [2.0, 2.0, 4.0], [2.0, 0.0, 4.0]], [[0.0, 2.0, 4.0], [0.0, 2.0, 6.0], [0.0, 4.0, 6.0]], [[0.0, 4.0, 4.0], [0.0, 2.0, 4.0], [0.0, 4.0, 6.0]], [[0.0, 2.0, 4.0], [0.0, 0.0, 4.0], [0.0, 0.0, 6.0], [0.0, 2.0, 6.0]], [[2.0, 0.0, 4.0], [2.0, 0.0, 6.0], [0.0, 0.0, 6.0]], [[0.0, 0.0, 4.0], [2.0, 0.0, 4.0], [0.0, 0.0, 6.0]], [[2.0, 4.0, 0.0], [2.0, 4.0, 2.0], [2.0, 2.0, 2.0]], [[2.0, 2.0, 0.0], [2.0, 4.0, 0.0], [2.0, 2.0, 2.0]], [[2.0, 2.0, 2.0], [2.0, 4.0, 4.0], [2.0, 2.0, 4.0]], [[2.0, 2.0, 2.0], [2.0, 4.0, 2.0], [2.0, 4.0, 4.0]], [[2.0, 4.0, 0.0], [0.0, 4.0, 0.0], [0.0, 4.0, 2.0], [2.0, 4.0, 2.0]], [[0.0, 2.0, 0.0], [0.0, 2.0, 2.0], [0.0, 4.0, 2.0]], [[0.0, 4.0, 0.0], [0.0, 2.0, 0.0], [0.0, 4.0, 2.0]], [[2.0, 4.0, 0.0], [0.0, 2.0, 0.0], [0.0, 4.0, 0.0]], [[2.0, 4.0, 0.0], [2.0, 2.0, 0.0], [0.0, 2.0, 0.0]], [[0.0, 2.0, 0.0], [0.0, 0.0, 2.0], [0.0, 2.0, 2.0]], [[0.0, 2.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]]}, {"label": "底1×2・高さ3 折り方 B", "theta": [0.0, 0.0, 0.0, -1.5707963267948966, -1.5707963267948966, 0.0, 0.0, 0.0, 0.0, 0.0, -1.5707963267948966, -1.5707963267948966, 0.0, 0.0, -1.5707963267948966, 0.0, 0.0, 0.0, -1.5707963267948966, 0.0, -1.5707963267948966, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5707963267948966, 0.0, 0.0, 0.0, 0.0, 1.5707963267948966, 1.5707963267948966, 0.0, 1.5707963267948966, 0.0], "colors": ["#c6dcf5", "#c6dcf5", "#fff5b0", "#fff5b0", "#f9c9c9", "#f9c9c9", "#f9c9c9", "#f9c9c9", "#f9c9c9", "#f9c9c9", "#cdebd0", "#fde2b3", "#fde2b3", "#fde2b3", "#fde2b3", "#fde2b3", "#fde2b3", "#fff5b0", "#fff5b0", "#fff5b0", "#cdebd0", "#cdebd0", "#f9c9c9", "#f9c9c9", "#f9c9c9", "#fde2b3", "#fde2b3", "#fde2b3", "#fde2b3", "#fde2b3", "#cdebd0", "#cdebd0", "#c6dcf5", "#c6dcf5", "#f9c9c9", "#f9c9c9"], "target3d": [[[2.0, 2.0, 0.0], [2.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 2.0, 0.0], [2.0, 2.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [2.0, 0.0, 2.0], [0.0, 0.0, 2.0]], [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [2.0, 0.0, 2.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 2.0], [0.0, 2.0, 2.0]], [[0.0, 2.0, 0.0], [0.0, 0.0, 0.0], [0.0, 2.0, 2.0]], [[0.0, 2.0, 2.0], [0.0, 0.0, 4.0], [0.0, 2.0, 4.0]], [[0.0, 2.0, 2.0], [0.0, 0.0, 2.0], [0.0, 0.0, 4.0]], [[0.0, 2.0, 2.0], [0.0, 2.0, 4.0], [0.0, 4.0, 4.0]], [[0.0, 4.0, 2.0], [0.0, 2.0, 2.0], [0.0, 4.0, 4.0]], [[2.0, 4.0, 2.0], [0.0, 4.0, 2.0], [0.0, 4.0, 4.0], [2.0, 4.0, 4.0]], [[2.0, 4.0, 2.0], [2.0, 4.0, 4.0], [2.0, 2.0, 4.0]], [[2.0, 2.0, 2.0], [2.0, 4.0, 2.0], [2.0, 2.0, 4.0]], [[2.0, 2.0, 4.0], [2.0, 4.0, 6.0], [2.0, 2.0, 6.0]], [[2.0, 2.0, 4.0], [2.0, 4.0, 4.0], [2.0, 4.0, 6.0]], [[2.0, 2.0, 4.0], [2.0, 2.0, 6.0], [2.0, 0.0, 6.0]], [[2.0, 0.0, 4.0], [2.0, 2.0, 4.0], [2.0, 0.0, 6.0]], [[0.0, 0.0, 4.0], [2.0, 0.0, 6.0], [0.0, 0.0, 6.0]], [[0.0, 0.0, 4.0], [2.0, 0.0, 4.0], [2.0, 0.0, 6.0]], [[0.0, 0.0, 2.0], [2.0, 0.0, 2.0], [2.0, 0.0, 4.0], [0.0, 0.0, 4.0]], [[0.0, 4.0, 4.0], [0.0, 4.0, 6.0], [2.0, 4.0, 6.0]], [[2.0, 4.0, 4.0], [0.0, 4.0, 4.0], [2.0, 4.0, 6.0]], [[0.0, 4.0, 4.0], [0.0, 2.0, 4.0], [0.0, 2.0, 6.0], [0.0, 4.0, 6.0]], [[0.0, 0.0, 4.0], [0.0, 0.0, 6.0], [0.0, 2.0, 6.0]], [[0.0, 2.0, 4.0], [0.0, 0.0, 4.0], [0.0, 2.0, 6.0]], [[2.0, 2.0, 0.0], [2.0, 2.0, 2.0], [2.0, 0.0, 2.0]], [[2.0, 0.0, 0.0], [2.0, 2.0, 0.0], [2.0, 0.0, 2.0]], [[2.0, 0.0, 2.0], [2.0, 2.0, 4.0], [2.0, 0.0, 4.0]], [[2.0, 0.0, 2.0], [2.0, 2.0, 2.0], [2.0, 2.0, 4.0]], [[2.0, 2.0, 0.0], [2.0, 4.0, 0.0], [2.0, 4.0, 2.0], [2.0, 2.0, 2.0]], [[0.0, 4.0, 0.0], [0.0, 4.0, 2.0], [2.0, 4.0, 2.0]], [[2.0, 4.0, 0.0], [0.0, 4.0, 0.0], [2.0, 4.0, 2.0]], [[2.0, 2.0, 0.0], [0.0, 4.0, 0.0], [2.0, 4.0, 0.0]], [[2.0, 2.0, 0.0], [0.0, 2.0, 0.0], [0.0, 4.0, 0.0]], [[0.0, 4.0, 0.0], [0.0, 2.0, 2.0], [0.0, 4.0, 2.0]], [[0.0, 4.0, 0.0], [0.0, 2.0, 0.0], [0.0, 2.0, 2.0]]]}, {"label": "底1×2・高さ3 折り方 C", "theta": [0.0, 0.0, 0.0, -1.5707963267948966, 0.0, 0.0, 0.0, 0.0, -1.5707963267948966, 0.0, -1.5707963267948966, 0.0, 0.0, 0.0, 0.0, -1.5707963267948966, 0.0, 0.0, -1.5707963267948966, 0.0, -1.5707963267948966, 0.0, -1.5707963267948966, 0.0, 0.0, 0.0, 1.5707963267948966, 0.0, 0.0, 1.5707963267948966, 0.0, 0.0, 1.5707963267948966, 0.0, 1.5707963267948966, 0.0], "colors": ["#c6dcf5", "#c6dcf5", "#f9c9c9", "#f9c9c9", "#f9c9c9", "#f9c9c9", "#f9c9c9", "#f9c9c9", "#cdebd0", "#cdebd0", "#fde2b3", "#fde2b3", "#fde2b3", "#fde2b3", "#fde2b3", "#fff5b0", "#fff5b0", "#f9c9c9", "#f9c9c9", "#f9c9c9", "#fde2b3", "#fde2b3", "#cdebd0", "#f9c9c9", "#f9c9c9", "#fff5b0", "#fff5b0", "#fff5b0", "#fff5b0", "#fde2b3", "#fde2b3", "#fde2b3", "#c6dcf5", "#c6dcf5", "#cdebd0", "#cdebd0"], "target3d": [[[2.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 2.0, 0.0]], [[2.0, 2.0, 0.0], [2.0, 0.0, 0.0], [0.0, 2.0, 0.0]], [[0.0, 2.0, 0.0], [0.0, 0.0, 2.0], [0.0, 2.0, 2.0]], [[0.0, 2.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], [[0.0, 2.0, 0.0], [0.0, 2.0, 2.0], [0.0, 4.0, 2.0]], [[0.0, 4.0, 0.0], [0.0, 2.0, 0.0], [0.0, 4.0, 2.0]], [[0.0, 4.0, 2.0], [0.0, 2.0, 4.0], [0.0, 4.0, 4.0]], [[0.0, 4.0, 2.0], [0.0, 2.0, 2.0], [0.0, 2.0, 4.0]], [[0.0, 4.0, 2.0], [0.0, 4.0, 4.0], [2.0, 4.0, 4.0]], [[2.0, 4.0, 2.0], [0.0, 4.0, 2.0], [2.0, 4.0, 4.0]], [[2.0, 2.0, 2.0], [2.0, 4.0, 2.0], [2.0, 4.0, 4.0], [2.0, 2.0, 4.0]], [[2.0, 2.0, 2.0], [2.0, 2.0, 4.0], [2.0, 0.0, 4.0]], [[2.0, 0.0, 2.0], [2.0, 2.0, 2.0], [2.0, 0.0, 4.0]], [[2.0, 0.0, 4.0], [2.0, 2.0, 6.0], [2.0, 0.0, 6.0]], [[2.0, 0.0, 4.0], [2.0, 2.0, 4.0], [2.0, 2.0, 6.0]], [[2.0, 0.0, 4.0], [2.0, 0.0, 6.0], [0.0, 0.0, 6.0]], [[0.0, 0.0, 4.0], [2.0, 0.0, 4.0], [0.0, 0.0, 6.0]], [[0.0, 2.0, 4.0], [0.0, 0.0, 6.0], [0.0, 2.0, 6.0]], [[0.0, 2.0, 4.0], [0.0, 0.0, 4.0], [0.0, 0.0, 6.0]], [[0.0, 2.0, 2.0], [0.0, 0.0, 2.0], [0.0, 0.0, 4.0], [0.0, 2.0, 4.0]], [[2.0, 4.0, 4.0], [2.0, 4.0, 6.0], [2.0, 2.0, 6.0]], [[2.0, 2.0, 4.0], [2.0, 4.0, 4.0], [2.0, 2.0, 6.0]], [[2.0, 4.0, 4.0], [0.0, 4.0, 4.0], [0.0, 4.0, 6.0], [2.0, 4.0, 6.0]], [[0.0, 2.0, 4.0], [0.0, 2.0, 6.0], [0.0, 4.0, 6.0]], [[0.0, 4.0, 4.0], [0.0, 2.0, 4.0], [0.0, 4.0, 6.0]], [[2.0, 0.0, 0.0], [2.0, 0.0, 2.0], [0.0, 0.0, 2.0]], [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 0.0, 2.0]], [[0.0, 0.0, 2.0], [2.0, 0.0, 4.0], [0.0, 0.0, 4.0]], [[0.0, 0.0, 2.0], [2.0, 0.0, 2.0], [2.0, 0.0, 4.0]], [[2.0, 0.0, 0.0], [2.0, 2.0, 0.0], [2.0, 2.0, 2.0], [2.0, 0.0, 2.0]], [[2.0, 4.0, 0.0], [2.0, 4.0, 2.0], [2.0, 2.0, 2.0]], [[2.0, 2.0, 0.0], [2.0, 4.0, 0.0], [2.0, 2.0, 2.0]], [[0.0, 2.0, 0.0], [2.0, 4.0, 0.0], [2.0, 2.0, 0.0]], [[0.0, 2.0, 0.0], [0.0, 4.0, 0.0], [2.0, 4.0, 0.0]], [[2.0, 4.0, 0.0], [0.0, 4.0, 2.0], [2.0, 4.0, 2.0]], [[2.0, 4.0, 0.0], [0.0, 4.0, 0.0], [0.0, 4.0, 2.0]]]}, {"label": "√2×√2×2√2（閉）", "theta": [0.0, 1.5707963267948966, -1.5707963267948966, 0.0, 0.0, 1.5707963267948966, -1.5707963267948966, 0.0, 0.0, 1.5707963267948966, 0.0, 0.0, 1.5707963267948966, -1.5707963267948966, 0.0, 0.0, 1.5707963267948966, -1.5707963267948966, 0.0, 0.0, 0.0, 1.5707963267948966, 0.0, -1.5707963267948966, 0.0, -1.5707963267948966, 0.0, -1.5707963267948966, 0.0, 0.0, -1.5707963267948966, 0.0, 0.0, 1.5707963267948966, 0.0, 1.5707963267948966], "colors": ["#f9c9c9", "#fff5b0", "#c6dcf5", "#f9c9c9", "#c6dcf5", "#fff5b0", "#fde2b3", "#c6dcf5", "#fde2b3", "#fff5b0", "#fff5b0", "#fff5b0", "#f9c9c9", "#e2cdf3", "#fff5b0", "#e2cdf3", "#f9c9c9", "#cdebd0", "#f9c9c9", "#f9c9c9", "#fde2b3", "#fff5b0", "#fde2b3", "#cdebd0", "#fde2b3", "#cdebd0", "#f9c9c9", "#c6dcf5", "#cdebd0", "#cdebd0", "#fde2b3", "#cdebd0", "#cdebd0", "#e2cdf3", "#fde2b3", "#e2cdf3"], "target3d": [[[0.0, 0.0, 2.0], [0.0, 1.0, 1.0], [0.0, 0.0, 0.0]], [[1.0, 0.0, 1.0], [0.0, 0.0, 2.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 2.0, 0.0], [1.0, 1.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 1.0, 1.0], [0.0, 2.0, 0.0]], [[0.0, 0.0, 0.0], [1.0, 1.0, 0.0], [2.0, 0.0, 0.0]], [[1.0, 0.0, 1.0], [0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], [[2.0, 0.0, 0.0], [2.0, 2.0, 0.0], [2.0, 1.0, 1.0]], [[2.0, 0.0, 0.0], [1.0, 1.0, 0.0], [2.0, 2.0, 0.0]], [[2.0, 0.0, 0.0], [2.0, 1.0, 1.0], [2.0, 0.0, 2.0]], [[1.0, 0.0, 1.0], [2.0, 0.0, 0.0], [2.0, 0.0, 2.0]], [[0.0, 0.0, 2.0], [1.0, 0.0, 1.0], [2.0, 0.0, 2.0], [1.0, 0.0, 3.0]], [[0.0, 0.0, 2.0], [1.0, 0.0, 3.0], [0.0, 0.0, 4.0]], [[0.0, 1.0, 3.0], [0.0, 0.0, 2.0], [0.0, 0.0, 4.0]], [[0.0, 0.0, 4.0], [2.0, 0.0, 4.0], [1.0, 1.0, 4.0]], [[0.0, 0.0, 4.0], [1.0, 0.0, 3.0], [2.0, 0.0, 4.0]], [[0.0, 0.0, 4.0], [1.0, 1.0, 4.0], [0.0, 2.0, 4.0]], [[0.0, 1.0, 3.0], [0.0, 0.0, 4.0], [0.0, 2.0, 4.0]], [[0.0, 2.0, 2.0], [0.0, 2.0, 4.0], [1.0, 2.0, 3.0]], [[0.0, 2.0, 2.0], [0.0, 1.0, 3.0], [0.0, 2.0, 4.0]], [[0.0, 1.0, 1.0], [0.0, 0.0, 2.0], [0.0, 1.0, 3.0], [0.0, 2.0, 2.0]], [[2.0, 0.0, 2.0], [2.0, 1.0, 3.0], [2.0, 0.0, 4.0]], [[1.0, 0.0, 3.0], [2.0, 0.0, 2.0], [2.0, 0.0, 4.0]], [[2.0, 0.0, 2.0], [2.0, 1.0, 1.0], [2.0, 2.0, 2.0], [2.0, 1.0, 3.0]], [[2.0, 2.0, 0.0], [1.0, 2.0, 1.0], [2.0, 2.0, 2.0]], [[2.0, 1.0, 1.0], [2.0, 2.0, 0.0], [2.0, 2.0, 2.0]], [[0.0, 2.0, 2.0], [1.0, 2.0, 1.0], [0.0, 2.0, 0.0]], [[0.0, 1.0, 1.0], [0.0, 2.0, 2.0], [0.0, 2.0, 0.0]], [[0.0, 2.0, 0.0], [2.0, 2.0, 0.0], [1.0, 1.0, 0.0]], [[0.0, 2.0, 0.0], [1.0, 2.0, 1.0], [2.0, 2.0, 0.0]], [[0.0, 2.0, 2.0], [1.0, 2.0, 3.0], [2.0, 2.0, 2.0], [1.0, 2.0, 1.0]], [[2.0, 2.0, 4.0], [2.0, 1.0, 3.0], [2.0, 2.0, 2.0]], [[1.0, 2.0, 3.0], [2.0, 2.0, 4.0], [2.0, 2.0, 2.0]], [[0.0, 2.0, 4.0], [2.0, 2.0, 4.0], [1.0, 2.0, 3.0]], [[0.0, 2.0, 4.0], [1.0, 1.0, 4.0], [2.0, 2.0, 4.0]], [[2.0, 2.0, 4.0], [2.0, 0.0, 4.0], [2.0, 1.0, 3.0]], [[2.0, 2.0, 4.0], [1.0, 1.0, 4.0], [2.0, 0.0, 4.0]]]}]};
+(function(){
+const T=window.THREE; const stage=document.getElementById('stage');
+const renderer=new T.WebGLRenderer({antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); stage.appendChild(renderer.domElement);
+const scene=new T.Scene(); const camera=new T.PerspectiveCamera(38,1,0.1,500);
+const group=new T.Group(); scene.add(group);
+// panels
+const panels=DATA.panels.map((p,i)=>{
+  const shape=new T.Shape(p.poly.map(v=>new T.Vector2(v[0],v[1])));
+  const geo=new T.ShapeGeometry(shape);
+  const mat=new T.MeshBasicMaterial({color:0xffffff,side:T.DoubleSide});   // flat colour, no lighting
+  const mesh=new T.Mesh(geo,mat); mesh.matrixAutoUpdate=false;
+  const edge=new T.LineSegments(new T.EdgesGeometry(geo),new T.LineBasicMaterial({color:0x1b2027,transparent:true,opacity:0.9})); edge.matrixAutoUpdate=false;
+  group.add(mesh); group.add(edge); return {mesh,edge,poly:p.poly};
+});
+// flat layout centre
+let cx=0,cy=0,n=0; DATA.cells.forEach(c=>{cx+=c[0]+0.5;cy+=c[1]+0.5;n++}); cx/=n; cy/=n;
+const ext=Math.max(...DATA.cells.map(c=>Math.max(Math.abs(c[0]+0.5-cx),Math.abs(c[1]+0.5-cy))))+1;
+// state
+let target=0, t=0, dir=1, playing=false, phase='fold';   // start flat and paused // fold -> hold -> unfold -> switch
+const speedEl=document.getElementById('speed'), loopEl=document.getElementById('loop'), tEl=document.getElementById('t'), stateEl=document.getElementById('state'), playBtn=document.getElementById('play');
+const chips=document.getElementById('chips');
+DATA.targets.forEach((tg,i)=>{ const b=document.createElement('button'); b.className='chip'; b.textContent=tg.label; b.setAttribute('aria-pressed',i===0); b.onclick=()=>{setTarget(i); t=0; dir=1; phase='fold'; playing=true; playBtn.textContent='一時停止';}; chips.appendChild(b); });
+const colorsEl=document.getElementById('colors'); const PLAIN='#f4f3ee';
+function applyColors(){ const cols=DATA.targets[target].colors; panels.forEach((p,k)=>p.mesh.material.color.set(colorsEl.checked?cols[k]:PLAIN)); }
+function setTarget(i){ target=i; [...chips.children].forEach((c,j)=>c.setAttribute('aria-pressed',j===i)); applyColors(); }
+colorsEl.addEventListener('change',applyColors);
+setTarget(0);
+const M=DATA.panels.map(()=>new T.Matrix4()); const tmpA=new T.Matrix4(), tmpB=new T.Matrix4(), v0=new T.Vector3(), v1=new T.Vector3(), ax=new T.Vector3();
+function pose(tt){
+  const th=DATA.targets[target].theta;
+  M[0].identity();
+  for(const c of DATA.order){ if(c===0) continue; const p=DATA.parent[c]; const h=DATA.hinge[c];
+    v0.set(h[0][0],h[0][1],0).applyMatrix4(M[p]); v1.set(h[1][0],h[1][1],0).applyMatrix4(M[p]); ax.subVectors(v1,v0).normalize();
+    tmpA.makeRotationAxis(ax,tt*th[c]); tmpB.makeTranslation(v0.x,v0.y,v0.z); tmpA.premultiply(tmpB); tmpB.makeTranslation(-v0.x,-v0.y,-v0.z); tmpA.multiply(tmpB);
+    M[c].multiplyMatrices(tmpA,M[p]); }
+  // centre of mass of vertices
+  const cen=new T.Vector3(); let k=0; const vv=new T.Vector3();
+  panels.forEach((p,i)=>{ for(const v of p.poly){ vv.set(v[0],v[1],0).applyMatrix4(M[i]); cen.add(vv); k++; } }); cen.multiplyScalar(1/k);
+  const shift=new T.Matrix4().makeTranslation(-cen.x,-cen.y,-cen.z);
+  panels.forEach((p,i)=>{ p.mesh.matrix.multiplyMatrices(shift,M[i]); p.edge.matrix.copy(p.mesh.matrix); });
+}
+// camera & orbit
+let yaw=0.6, pitch=0.55, dist=1; const fitDist=()=>ext*1.3/(Math.tan(camera.fov*Math.PI/360)*Math.min(1,camera.aspect)); function cam(){ camera.position.set(dist*Math.cos(pitch)*Math.sin(yaw),dist*Math.sin(pitch),dist*Math.cos(pitch)*Math.cos(yaw)); camera.lookAt(0,0,0); }
+let drag=null; renderer.domElement.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY}; renderer.domElement.setPointerCapture(e.pointerId)});
+renderer.domElement.addEventListener('pointermove',e=>{ if(!drag) return; yaw-=(e.clientX-drag.x)*0.008; pitch=Math.max(-1.4,Math.min(1.4,pitch+(e.clientY-drag.y)*0.008)); drag={x:e.clientX,y:e.clientY}; });
+renderer.domElement.addEventListener('pointerup',()=>drag=null);
+renderer.domElement.addEventListener('wheel',e=>{ e.preventDefault(); dist=Math.max(ext*0.8,Math.min(ext*12,dist*(1+e.deltaY*0.001))); },{passive:false});
+function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); dist=fitDist(); } addEventListener('resize',resize); resize();
+// controls
+playBtn.onclick=()=>{ playing=!playing; playBtn.textContent=playing?'一時停止':'再生'; };
+tEl.addEventListener('input',()=>{ playing=false; playBtn.textContent='再生'; t=tEl.value/1000; });
+const ease=x=>x;   // linear: constant folding speed
+let hold=0, last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(playing){ const sp=speedEl.value*0.08;
+    if(phase==='fold'){ t+=sp*dt; if(t>=1){t=1; phase='hold'; hold=0;} }
+    else if(phase==='hold'){ hold+=dt; if(hold>1.2){ phase=loopEl.checked?'unfold':'done'; } }
+    else if(phase==='unfold'){ t-=sp*dt; if(t<=0){ t=0; phase='switch'; hold=0; } }
+    else if(phase==='switch'){ hold+=dt; if(hold>0.5){ setTarget((target+1)%DATA.targets.length); phase='fold'; } }
+    tEl.value=Math.round(t*1000);
+  }
+  pose(ease(t)); cam();
+  const tg=DATA.targets[target]; stateEl.innerHTML='<b>'+tg.label+'</b> 　折り '+Math.round(t*100)+'%';
+  renderer.render(scene,camera); requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
