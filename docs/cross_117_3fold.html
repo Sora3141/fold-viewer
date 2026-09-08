@@ -51,7 +51,7 @@ label.opt{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mut
   <h1>十字ポリキューブに一通り，箱に二通り<small>十字ポリキューブと 1×1×7（2 通り）に折れる面積 30 の共通展開図 — 全 7 個のうちの 1 つ</small></h1>
   <div class="chips" id="chips"></div>
 </div>
-<div class="legend" id="legend">ドラッグで回転、ホイールで拡大。黒い線がいま折る折り目、薄い線はマスの境目や他の折り方の折り目（この折り方では平ら）。折り目の角度を 0 から目標値まで一斉に動かしているので、途中で面が重なって見えることがあります。</div>
+<div class="legend" id="legend">ドラッグで回転、ホイールで拡大。黒い線は紙の縁といま折る折り目、薄い線はマスの境目や他の折り方の折り目（この折り方では平ら）。折り目の角度を 0 から目標値まで一斉に動かしているので、途中で面が重なって見えることがあります。</div>
 <div class="bar" id="bottom">
   <button class="play" id="play">再生</button>
   <input type="range" id="t" min="0" max="1000" value="0" aria-label="折り進み">
@@ -75,7 +75,7 @@ const panels=DATA.panels.map((p,i)=>{
   const mat=new T.MeshBasicMaterial({color:0xffffff,side:T.DoubleSide});   // flat colour, no lighting
   const mesh=new T.Mesh(geo,mat); mesh.matrixAutoUpdate=false;
   const mk=(color,op,lw)=>{ const l=new T.LineSegments(new T.BufferGeometry(),new T.LineBasicMaterial({color,transparent:true,opacity:op,linewidth:lw})); l.matrixAutoUpdate=false; group.add(l); return l; };
-  const edge={bnd:mk(0x1b2027,0.18,1),crease:mk(0x1b2027,0.95,1),flat:mk(0x1b2027,0.18,1)};   // crease = black, everything else faint
+  const edge={bnd:mk(0x1b2027,0.95,1),crease:mk(0x1b2027,0.95,1),flat:mk(0x1b2027,0.18,1)};   // boundary + crease = black, other lines faint
   group.add(mesh); return {mesh,edge,poly:p.poly};
 });
 // ---- edge classification: boundary / crease (folded in the current target) / flat (coplanar in the current target)
