@@ -48,7 +48,8 @@ for a in apps:
 def card(a):
     d=json.load(open(a['data'])); n=len(d['targets']); show=list(range(min(n,5)))
     thumbs='<div class="thumbs">'+f'<figure>{svg_net(d,96)}<figcaption>展開図</figcaption></figure>'+''.join(f'<figure>{svg_solid(d,i,96)}<figcaption>{html.escape(d["targets"][i]["label"])}</figcaption></figure>' for i in show)+(f'<figure class="more">+{n-5}</figure>' if n>5 else '')+'</div>'
-    return f'''<a class="card" href="{a['file']}.html"><h2>{html.escape(a['title'])}</h2><p class="sub">{html.escape(a['sub'])}</p>{thumbs}<p>{html.escape(a['note'])}</p></a>'''
+    area=len(d['cells'])
+    return f'''<a class="card" href="{a['file']}.html"><h2><span class="area">面積 {area}</span>{html.escape(a['title'])}</h2><p class="sub">{html.escape(a['sub'])}</p>{thumbs}<p>{html.escape(a['note'])}</p></a>'''
 INTRO={'同じ箱の多重折り':'一枚の展開図が同じ箱に本質的に異なる複数の方法で折れる例。折り線の入れ替わりに注目。',
  '異なる箱の共通展開図':'一枚の展開図が形の違う複数の箱に折れる例。多重折りをもつものを選んだ。',
  'ふたの無い箱（開いた箱）':'直方体の 1 面を除いたゴミ箱型の箱。開いた箱どうし，開いた箱と閉じた箱の共通展開図と多重折り。',
@@ -71,7 +72,7 @@ h1{{font-size:26px;margin:0 0 6px}} .lead{{color:var(--muted);margin:0 0 32px;ma
 .cat{{font-size:20px;margin:36px 0 4px;padding-bottom:6px;border-bottom:2px solid var(--line)}} .cat .count{{font-size:13px;color:var(--muted);font-weight:500;margin-left:10px}} .intro{{color:var(--muted);margin:0 0 14px;font-size:14px}}
 .thumbs{{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 12px}} .thumbs figure{{margin:0;text-align:center;width:96px}} .thumbs figcaption{{font-size:10px;color:var(--muted);line-height:1.3;margin-top:2px;word-break:keep-all}} .thumbs svg{{display:block;background:var(--bg);border-radius:6px}} .thumbs .more{{display:flex;align-items:center;justify-content:center;height:96px;color:var(--muted);font-size:18px}}
 .card{{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;color:inherit;text-decoration:none;line-height:1.6}}
-.card:hover{{border-color:var(--accent)}} .card h2{{font-size:18px;margin:0 0 4px}} .card .sub{{color:var(--muted);font-size:13px;margin:0 0 10px}} .card p{{margin:0;font-size:14px}}
+.card:hover{{border-color:var(--accent)}} .card h2{{font-size:18px;margin:0 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}} .card .area{{font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:1px 8px;letter-spacing:.04em}} .card .sub{{color:var(--muted);font-size:13px;margin:0 0 10px}} .card p{{margin:0;font-size:14px}}
 footer{{color:var(--muted);font-size:12px;margin-top:40px;line-height:1.7}}
 </style></head><body><main>
 <h1>展開図フォールディング</h1>
