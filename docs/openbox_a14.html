@@ -23,7 +23,8 @@
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;overflow:hidden}
 #stage{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 60%,var(--bg) 0%,var(--bg2) 100%)}
-#stage canvas{display:block;outline:none}
+#stage canvas{display:block;outline:none;touch-action:none;-webkit-user-select:none;user-select:none}
+html,body{overscroll-behavior:none;-webkit-touch-callout:none}
 .bar{position:fixed;left:0;right:0;display:flex;align-items:center;gap:14px;padding:12px 18px;pointer-events:none}
 .bar > *{pointer-events:auto}
 #top{top:0;justify-content:space-between}
@@ -105,9 +106,17 @@ function pose(tt){
 }
 // camera & orbit
 let yaw=0.6, pitch=0.55, dist=1; const fitDist=()=>ext*1.3/(Math.tan(camera.fov*Math.PI/360)*Math.min(1,camera.aspect)); function cam(){ camera.position.set(dist*Math.cos(pitch)*Math.sin(yaw),dist*Math.sin(pitch),dist*Math.cos(pitch)*Math.cos(yaw)); camera.lookAt(0,0,0); }
-let drag=null; renderer.domElement.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY}; renderer.domElement.setPointerCapture(e.pointerId)});
-renderer.domElement.addEventListener('pointermove',e=>{ if(!drag) return; yaw-=(e.clientX-drag.x)*0.008; pitch=Math.max(-1.4,Math.min(1.4,pitch+(e.clientY-drag.y)*0.008)); drag={x:e.clientX,y:e.clientY}; });
-renderer.domElement.addEventListener('pointerup',()=>drag=null);
+// pointer handling: 1 finger/mouse = rotate, 2 fingers = pinch zoom (touch-action:none keeps the page from scrolling)
+const ptrs=new Map(); let pinch0=null;
+const el=renderer.domElement;
+el.addEventListener('pointerdown',e=>{ e.preventDefault(); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); el.setPointerCapture(e.pointerId); if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinch0={d:Math.hypot(a.x-b.x,a.y-b.y),dist}; } });
+el.addEventListener('pointermove',e=>{ if(!ptrs.has(e.pointerId)) return; e.preventDefault();
+  if(ptrs.size===1){ const p=ptrs.get(e.pointerId); yaw-=(e.clientX-p.x)*0.008; pitch=Math.max(-1.4,Math.min(1.4,pitch+(e.clientY-p.y)*0.008)); }
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2 && pinch0){ const [a,b]=[...ptrs.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); dist=Math.max(ext*0.8,Math.min(ext*12,pinch0.dist*pinch0.d/Math.max(d,1))); } });
+const release=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) pinch0=null; };
+el.addEventListener('pointerup',release); el.addEventListener('pointercancel',release); el.addEventListener('lostpointercapture',release);
+['touchstart','touchmove'].forEach(t=>el.addEventListener(t,e=>e.preventDefault(),{passive:false}));
 renderer.domElement.addEventListener('wheel',e=>{ e.preventDefault(); dist=Math.max(ext*0.8,Math.min(ext*12,dist*(1+e.deltaY*0.001))); },{passive:false});
 function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); dist=fitDist(); } addEventListener('resize',resize); resize();
 // controls
