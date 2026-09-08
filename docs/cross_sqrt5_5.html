@@ -52,7 +52,7 @@ label.opt{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mut
 </div>
 <div class="legend" id="legend">ドラッグで回転、ホイールで拡大。折り目の角度を 0 から目標値まで一斉に動かしているので、途中で面が重なって見えることがあります。</div>
 <div class="bar" id="bottom">
-  <button class="play" id="play">一時停止</button>
+  <button class="play" id="play">再生</button>
   <input type="range" id="t" min="0" max="1000" value="0" aria-label="折り進み">
   <span id="state"><b>—</b></span>
   <label class="opt"><input type="checkbox" id="loop" checked> 自動で往復</label>
@@ -80,7 +80,7 @@ const panels=DATA.panels.map((p,i)=>{
 let cx=0,cy=0,n=0; DATA.cells.forEach(c=>{cx+=c[0]+0.5;cy+=c[1]+0.5;n++}); cx/=n; cy/=n;
 const ext=Math.max(...DATA.cells.map(c=>Math.max(Math.abs(c[0]+0.5-cx),Math.abs(c[1]+0.5-cy))))+1;
 // state
-let target=0, t=0, dir=1, playing=true, phase='fold'; // fold -> hold -> unfold -> switch
+let target=0, t=0, dir=1, playing=false, phase='fold';   // start flat and paused // fold -> hold -> unfold -> switch
 const speedEl=document.getElementById('speed'), loopEl=document.getElementById('loop'), tEl=document.getElementById('t'), stateEl=document.getElementById('state'), playBtn=document.getElementById('play');
 const chips=document.getElementById('chips');
 DATA.targets.forEach((tg,i)=>{ const b=document.createElement('button'); b.className='chip'; b.textContent=tg.label; b.setAttribute('aria-pressed',i===0); b.onclick=()=>{setTarget(i); t=0; dir=1; phase='fold'; playing=true; playBtn.textContent='一時停止';}; chips.appendChild(b); });
