@@ -360,5 +360,15 @@
   "cite": "R. Tadaki, K. Amano, “Search for developments of a box having multiple ways of folding by SAT solver,” arXiv:2005.02645 (2020)",
   "category": "先行研究の例",
   "order": 88
+ },
+ {
+  "file": "box30_133x3_sqrt5",
+  "data": "data/data_box30_133x3_sqrt5.json",
+  "title": "1×3×3に三通り＋√5立方体",
+  "heading": "二つの箱に計四通り",
+  "sub": "1×3×3 に 3 通り，√5 立方体に 1 通り折れる面積 30 の展開図（完全列挙で 2 個のうちの 1 つ）",
+  "note": "面積 30 の 3 箱（1×1×7，1×3×3，√5 立方体）の共通展開図を HAKUSAN で完全列挙した結果から。1×1×7 には折れないが，1×3×3 の折り方が 3 つある。",
+  "category": "異なる箱の共通展開図",
+  "order": 30.7
  }
 ]
