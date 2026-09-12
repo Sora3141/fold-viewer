@@ -5,7 +5,7 @@ GitHub Pages: https://sora3141.github.io/fold-viewer/
 
 ## 構成
 - `template.html` … アプリのひな形（three.js，折り目の角度を 0→目標値で一斉に動かす）
-- `data/*.json` … 展開図ごとのデータ（パネル多角形，ヒンジ木，立体ごとの折り角と色）。研究用リポジトリの `openbox/src/fold_export.py` が探索結果から生成する
+- `data/*.json` … 展開図ごとのデータ（パネル多角形，ヒンジ木，立体ごとの折り角と色）。研究用リポジトリの `開いた箱/src/fold_export.py` が探索結果から生成する
 - `apps.json` … 公開するアプリの一覧（題名・説明・データ）
 - `build.py` … `apps.json` から `docs/<name>.html`（公開ページ）と `<name>.html`（Claude Artifact 用の本文のみ版）と `docs/index.html`（一覧）を生成
 - `docs/` … GitHub Pages で配信されるファイル
