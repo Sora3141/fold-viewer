@@ -36,12 +36,13 @@ def svg_net(d,size=110):
         out.append('<polygon points="'+' '.join(f'{x*sc+ox:.1f},{oy-y*sc:.1f}' for x,y in pg)+f'" fill="{col}" stroke="#2a2f36" stroke-width="0.6"/>')
     out.append('</svg>'); return ''.join(out)
 apps=json.load(open('apps.json')); tpl=open('template.html').read()
-HEAD='<!doctype html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n'
+HEAD='<!doctype html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
 for a in apps:
     d=json.load(open(a['data']))
     sub=a['sub']+(('　／　出典：'+a['cite']) if a.get('cite') else '')
-    body=tpl.replace('__TITLE__',a['title']).replace('__HEADING__',a['heading']).replace('__SUB__',sub).replace('/*DATA*/null',json.dumps(d,ensure_ascii=False))
-    open(a['file']+'.html','w').write(body)
+    body=tpl.replace('__TITLE__',a['title']).replace('__HEADING__',a['heading']).replace('__SUB__',sub).replace('__NOTE__',html.escape(a['note'])).replace('/*DATA*/null',json.dumps(d,ensure_ascii=False))
+    open(a['file']+'.html','w').write(body.replace('__HOME__',''))   # artifact: no gallery to go back to
+    body=body.replace('__HOME__','<a class="home" href="./" aria-label="一覧へ戻る" title="一覧へ戻る">←</a>')
     # standalone: move <title>/<link>/<style> into head
     i=body.index('<div id="stage">'); head_part=body[:i]; rest=body[i:]
     open(f"docs/{a['file']}.html",'w').write(HEAD+head_part+'</head>\n<body>\n'+rest+'\n</body>\n</html>\n')
@@ -60,8 +61,10 @@ INTRO={'先行研究の例':'論文に掲載されている共通展開図・多
 sections=[]
 for c in dict.fromkeys(a['category'] for a in apps):
     grp=[a for a in apps if a['category']==c]
-    sections.append(f'<section><h2 class="cat">{html.escape(c)}<span class="count">{len(grp)} 本</span></h2><p class="intro">{html.escape(INTRO.get(c,""))}</p><div class="grid">'+"\n".join(card(a) for a in grp)+'</div></section>')
+    sections.append(f'<section id="c{len(sections)}"><h2 class="cat">{html.escape(c)}<span class="count">{len(grp)} 本</span></h2><p class="intro">{html.escape(INTRO.get(c,""))}</p><div class="grid">'+"\n".join(card(a) for a in grp)+'</div></section>')
 cards="\n".join(sections)
+cats=list(dict.fromkeys(a['category'] for a in apps))
+nav='<nav class="toc" aria-label="分類">'+''.join(f'<a href="#c{i}">{html.escape(c)}<span>{sum(a["category"]==c for a in apps)}</span></a>' for i,c in enumerate(cats))+'</nav>'
 index=f'''<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>展開図フォールディング</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
@@ -69,18 +72,22 @@ index=f'''<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name=
 :root{{--bg:#eef0f3;--ink:#1b2027;--muted:#5f6772;--line:#c9ced6;--card:#fff;--accent:#c8332b}}
 @media (prefers-color-scheme:dark){{:root{{--bg:#15181d;--ink:#e8eaee;--muted:#9aa3ad;--line:#2c323a;--card:#1c2026;--accent:#e0554a}}}}
 body{{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif}}
-main{{max-width:1180px;margin:0 auto;padding:48px 20px}}
-h1{{font-size:26px;margin:0 0 6px}} .lead{{color:var(--muted);margin:0 0 32px;max-width:60ch;line-height:1.7}}
-.grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:18px}}
+main{{max-width:1180px;margin:0 auto;padding:48px 16px}}
+h1{{font-size:26px;margin:0 0 6px}} h1 .total{{font-size:13px;color:var(--muted);font-weight:500;margin-left:12px}} .lead{{color:var(--muted);margin:0 0 32px;max-width:60ch;line-height:1.7}}
+.grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(360px,100%),1fr));gap:18px}}
+.toc{{position:sticky;top:0;z-index:1;display:flex;gap:6px;overflow-x:auto;padding:10px 0;margin:0 0 8px;background:var(--bg);scrollbar-width:none}} .toc::-webkit-scrollbar{{display:none}}
+.toc a{{flex:0 0 auto;font-size:13px;color:var(--ink);text-decoration:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px}} .toc a:hover{{border-color:var(--accent)}} .toc span{{color:var(--muted);font-size:11px;margin-left:6px}}
+section{{scroll-margin-top:56px}}
 .cat{{font-size:20px;margin:36px 0 4px;padding-bottom:6px;border-bottom:2px solid var(--line)}} .cat .count{{font-size:13px;color:var(--muted);font-weight:500;margin-left:10px}} .intro{{color:var(--muted);margin:0 0 14px;font-size:14px}}
 .thumbs{{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 12px}} .thumbs figure{{margin:0;text-align:center;width:96px}} .thumbs figcaption{{font-size:10px;color:var(--muted);line-height:1.3;margin-top:2px;word-break:keep-all}} .thumbs svg{{display:block;background:var(--bg);border-radius:6px}} .thumbs .more{{display:flex;align-items:center;justify-content:center;height:96px;color:var(--muted);font-size:18px}}
 .card{{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;color:inherit;text-decoration:none;line-height:1.6}}
-.card:hover{{border-color:var(--accent)}} .card h2{{font-size:18px;margin:0 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}} .card .area{{font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:1px 8px;letter-spacing:.04em}} .card .sub{{color:var(--muted);font-size:13px;margin:0 0 10px}} .card .cite{{color:var(--muted);font-size:11px;margin-top:8px;border-top:1px dashed var(--line);padding-top:6px}} .card p{{margin:0;font-size:14px}}
+.card{{transition:border-color .15s,transform .15s,box-shadow .15s}} .card:hover{{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 20px #0001}} .card:focus-visible{{outline:2px solid var(--accent);outline-offset:2px}} @media (prefers-reduced-motion:reduce){{.card{{transition:none}} .card:hover{{transform:none}}}} .card h2{{font-size:18px;margin:0 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}} .card .area{{font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:1px 8px;letter-spacing:.04em}} .card .sub{{color:var(--muted);font-size:13px;margin:0 0 10px}} .card .cite{{color:var(--muted);font-size:11px;margin-top:8px;border-top:1px dashed var(--line);padding-top:6px}} .card p{{margin:0;font-size:14px}}
 footer{{color:var(--muted);font-size:12px;margin-top:40px;line-height:1.7}}
 </style></head><body><main>
-<h1>展開図フォールディング</h1>
+<h1>展開図フォールディング<span class="total">{len(apps)} 本</span></h1>
 <p class="lead">一枚のポリオミノが複数の立体に折れる「共通展開図」を，折り目の角度を一斉に動かして 3D で見せるページ集。JAIST 上原研究室での展開図研究（同じ箱の多重折り，箱・開いた箱・ポリキューブの共通展開図）から，見せたい例を順に追加していく。</p>
+{nav}
 {cards}
-<footer>操作：ドラッグで回転，ホイールで拡大，下のスライダーで折り進み。折り切った形が探索で得た面配置と一致することを数値的に確認したデータを使っている。途中の形は全折り目を同時に回しているだけなので，面がすれ違うことがある。</footer>
+<footer>操作：ドラッグで回転，ホイール・ピンチで拡大，ダブルクリックで視点を戻す，下のスライダーで折り進み，Space で再生，←→ で立体を切り替え。折り切った形が探索で得た面配置と一致することを数値的に確認したデータを使っている。途中の形は全折り目を同時に回しているだけなので，面がすれ違うことがある。</footer>
 </main></body></html>'''
 open('docs/index.html','w').write(index); print('built docs/index.html')

@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>開いた箱と1×2×2</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -25,41 +25,76 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic
 #stage{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 60%,var(--bg) 0%,var(--bg2) 100%)}
 #stage canvas{display:block;outline:none;touch-action:none;-webkit-user-select:none;user-select:none}
 html,body{overscroll-behavior:none;-webkit-touch-callout:none}
-.bar{position:fixed;left:0;right:0;display:flex;align-items:center;gap:14px;padding:12px 18px;pointer-events:none}
+.bar{position:fixed;left:0;right:0;display:flex;align-items:center;gap:12px;padding:12px 18px;pointer-events:none}
 .bar > *{pointer-events:auto}
-#top{top:0;justify-content:space-between}
-#bottom{bottom:0;background:linear-gradient(to top,var(--bg) 60%,transparent);padding-top:28px;flex-wrap:wrap}
-h1{font-size:15px;font-weight:700;margin:0;letter-spacing:.02em}
-h1 small{display:block;font-weight:500;color:var(--muted);font-size:12px;margin-top:2px}
-.chips{display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;max-width:62vw;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin;padding:2px 0 4px}
-.chip{flex:0 0 auto;white-space:nowrap;scroll-snap-align:start}
-.chip{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+#top{top:0;align-items:flex-start;padding-top:calc(12px + env(safe-area-inset-top,0px))}
+.title{display:flex;align-items:flex-start;gap:10px;min-width:0;flex:1 1 auto}
+.home{flex:0 0 auto;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--chip);color:var(--ink);text-decoration:none;font-size:16px}
+.home:hover{border-color:var(--accent)}
+h1{font-size:15px;font-weight:700;margin:0;letter-spacing:.02em;line-height:1.4}
+h1 small{display:block;font-weight:500;color:var(--muted);font-size:12px;margin-top:2px;max-width:60ch}
+.chips{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;max-width:56vw;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin;padding:2px 2px 4px}
+.chip{flex:0 0 auto;white-space:nowrap;scroll-snap-align:start;display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.chip .n{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;color:var(--muted)}
+.chip:hover{border-color:var(--ink)}
 .chip[aria-pressed="true"]{background:var(--chip-on);color:var(--bg);border-color:var(--chip-on)}
-.chip:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-#state{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;color:var(--muted);min-width:14em}
-#state b{color:var(--ink);font-weight:500}
-button.play{background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:8px 16px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
-input[type=range]{width:min(360px,50vw);accent-color:var(--accent)}
-label.opt{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
-.legend{position:fixed;right:18px;top:64px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--muted);max-width:240px;line-height:1.5}
-@media (max-width:640px){ .legend{display:none} h1 small{display:none} #top{flex-wrap:wrap;gap:8px} .chips{max-width:100%;width:100%;mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent)} }
+.chip[aria-pressed="true"] .n{color:inherit;opacity:.7}
+.chip:focus-visible,button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#bottom{bottom:0;flex-direction:column;align-items:stretch;gap:8px;background:linear-gradient(to top,var(--bg) 55%,transparent);padding-top:32px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+.row{display:flex;align-items:center;gap:12px;max-width:760px;width:100%;margin:0 auto}
+#state{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;color:var(--muted);white-space:nowrap;min-width:4.5em;text-align:right}
+.label{font-weight:700;font-size:14px;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+button.play{flex:0 0 auto;display:grid;place-items:center;width:44px;height:44px;background:var(--accent);color:var(--accent-ink);border:0;border-radius:50%;cursor:pointer;box-shadow:0 2px 8px #0003}
+button.play svg{width:18px;height:18px;fill:currentColor}
+button.play .pause,button.play[aria-pressed="true"] .go{display:none}
+button.play[aria-pressed="true"] .pause{display:block}
+button.ghost{flex:0 0 auto;border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
+button.ghost:hover{border-color:var(--ink)}
+#t{flex:1 1 auto;min-width:0;accent-color:var(--accent);height:28px}
+.opts{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.opts label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.opts .sp{margin-left:auto}
+#speed{width:80px;accent-color:var(--accent)}
+.help{position:fixed;right:18px;top:calc(64px + env(safe-area-inset-top,0px));background:var(--panel);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--muted);width:min(280px,calc(100vw - 36px));line-height:1.6;box-shadow:0 6px 24px #0002}
+.help p{margin:0 0 8px} .help p:last-child{margin:0}
+.help .note{color:var(--ink);font-size:13px}
+.help kbd{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 4px;background:var(--chip)}
+#stage canvas{cursor:grab} #stage canvas:active{cursor:grabbing}
+@media (max-width:640px){
+  #top{flex-wrap:wrap;gap:8px}
+  h1 small{display:none}
+  .chips{max-width:100%;width:100%;mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent)}
+  .help{top:auto;bottom:calc(150px + env(safe-area-inset-bottom,0px));right:12px;left:12px;width:auto}
+  .opts{gap:10px}
+}
 @media (prefers-reduced-motion: reduce){ body{--dur:0} }
 </style>
 </head>
 <body>
 <div id="stage"></div>
 <div class="bar" id="top">
-  <h1>開いた箱と閉じた箱<small>底 2×3・高さ 1 のふたの無い箱と 1×2×2 の箱（面積 16）の共通展開図 — 全 2 個のうちの 1 つ</small></h1>
-  <div class="chips" id="chips"></div>
+  <div class="title"><a class="home" href="./" aria-label="一覧へ戻る" title="一覧へ戻る">←</a><h1>開いた箱と閉じた箱<small>底 2×3・高さ 1 のふたの無い箱と 1×2×2 の箱（面積 16）の共通展開図 — 全 2 個のうちの 1 つ</small></h1></div>
+  <div class="chips" id="chips" role="group" aria-label="折る立体"></div>
 </div>
-<div class="legend" id="legend">ドラッグで回転、ホイールで拡大。黒い線は紙の縁といま折る折り目、薄い線はマスの境目や他の折り方の折り目（この折り方では平ら）。折り目の角度を 0 から目標値まで一斉に動かしているので、途中で面が重なって見えることがあります。</div>
+<div class="help" id="help" hidden>
+  <p class="note">開いた箱と整数辺の閉じた箱の共通展開図。</p>
+  <p>ドラッグで回転、ホイール・ピンチで拡大、ダブルクリックで視点を戻す。<kbd>Space</kbd> 再生　<kbd>←</kbd><kbd>→</kbd> 立体を切り替え</p>
+  <p>黒い線は紙の縁といま折る折り目、薄い線はマスの境目や他の折り方の折り目（この折り方では平ら）。折り目の角度を一斉に動かしているので、途中で面が重なって見えることがあります。</p>
+</div>
 <div class="bar" id="bottom">
-  <button class="play" id="play">再生</button>
-  <input type="range" id="t" min="0" max="1000" value="0" aria-label="折り進み">
-  <span id="state"><b>—</b></span>
-  <label class="opt"><input type="checkbox" id="loop" checked> 自動で往復</label>
-  <label class="opt"><input type="checkbox" id="colors" checked> 面に色</label>
-  <label class="opt">速さ <input type="range" id="speed" min="1" max="10" value="6" style="width:90px" aria-label="速さ"></label>
+  <div class="row">
+    <button class="play" id="play" aria-label="再生" aria-pressed="false"><svg class="go" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg><svg class="pause" viewBox="0 0 24 24"><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/></svg></button>
+    <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px">
+      <div style="display:flex;gap:8px;align-items:baseline"><span class="label" id="label">—</span><span id="state">0%</span></div>
+      <input type="range" id="t" min="0" max="1000" value="0" aria-label="折り進み">
+    </div>
+  </div>
+  <div class="row opts">
+    <label><input type="checkbox" id="loop" checked> 全部の立体を順に</label>
+    <label><input type="checkbox" id="colors" checked> 面に色</label>
+    <label class="sp">速さ <input type="range" id="speed" min="1" max="10" value="6" aria-label="速さ"></label>
+    <button class="ghost" id="helpBtn" aria-expanded="false" aria-controls="help">説明</button>
+  </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -107,10 +142,17 @@ const ext=Math.max(...DATA.cells.map(c=>Math.max(Math.abs(c[0]+0.5-cx),Math.abs(
 let target=0, t=0, dir=1, playing=false, phase='fold';   // start flat and paused // fold -> hold -> unfold -> switch
 const speedEl=document.getElementById('speed'), loopEl=document.getElementById('loop'), tEl=document.getElementById('t'), stateEl=document.getElementById('state'), playBtn=document.getElementById('play');
 const chips=document.getElementById('chips');
-DATA.targets.forEach((tg,i)=>{ const b=document.createElement('button'); b.className='chip'; b.textContent=tg.label; b.setAttribute('aria-pressed',i===0); b.onclick=()=>{setTarget(i); t=0; dir=1; phase='fold'; playing=false; playBtn.textContent='再生'; tEl.value=0; b.scrollIntoView({block:'nearest',inline:'nearest'});}; chips.appendChild(b); });
+const labelEl=document.getElementById('label');
+function setPlaying(v){ playing=v; playBtn.setAttribute('aria-pressed',v); playBtn.setAttribute('aria-label',v?'一時停止':'再生'); }
+function pick(i){ setTarget(i); t=0; phase='fold'; setPlaying(false); tEl.value=0; chips.children[i].scrollIntoView({block:'nearest',inline:'nearest'}); }
+DATA.targets.forEach((tg,i)=>{ const b=document.createElement('button'); b.className='chip'; b.innerHTML='<span class="n">'+(i+1)+'</span>'; b.append(tg.label); b.setAttribute('aria-pressed',i===0); b.onclick=()=>pick(i); chips.appendChild(b); });
+const helpEl=document.getElementById('help'), helpBtn=document.getElementById('helpBtn');
+function showHelp(v){ helpEl.hidden=!v; helpBtn.setAttribute('aria-expanded',v); }
+helpBtn.onclick=()=>showHelp(helpEl.hidden);
+showHelp(innerWidth>640);
 const colorsEl=document.getElementById('colors'); const PLAIN='#f4f3ee';
 function applyColors(){ const cols=DATA.targets[target].colors; panels.forEach((p,k)=>p.mesh.material.color.set(colorsEl.checked?cols[k]:PLAIN)); }
-function setTarget(i){ target=i; [...chips.children].forEach((c,j)=>c.setAttribute('aria-pressed',j===i)); applyColors(); classifyEdges(i); }
+function setTarget(i){ target=i; [...chips.children].forEach((c,j)=>c.setAttribute('aria-pressed',j===i)); labelEl.textContent=DATA.targets[i].label; applyColors(); classifyEdges(i); }
 colorsEl.addEventListener('change',applyColors);
 setTarget(0);
 const M=DATA.panels.map(()=>new T.Matrix4()); const tmpA=new T.Matrix4(), tmpB=new T.Matrix4(), v0=new T.Vector3(), v1=new T.Vector3(), ax=new T.Vector3();
@@ -128,7 +170,7 @@ function pose(tt){
   panels.forEach((p,i)=>{ p.mesh.matrix.multiplyMatrices(shift,M[i]); for(const k in p.edge) p.edge[k].matrix.copy(p.mesh.matrix); });
 }
 // camera & orbit
-let yaw=0.6, pitch=0.55, dist=1; const fitDist=()=>ext*1.3/(Math.tan(camera.fov*Math.PI/360)*Math.min(1,camera.aspect)); function cam(){ camera.position.set(dist*Math.cos(pitch)*Math.sin(yaw),dist*Math.sin(pitch),dist*Math.cos(pitch)*Math.cos(yaw)); camera.lookAt(0,0,0); }
+const YAW0=0.6, PITCH0=0.55; let yaw=YAW0, pitch=PITCH0, dist=1; const fitDist=()=>ext*1.3/(Math.tan(camera.fov*Math.PI/360)*Math.min(1,camera.aspect)); function cam(){ camera.position.set(dist*Math.cos(pitch)*Math.sin(yaw),dist*Math.sin(pitch),dist*Math.cos(pitch)*Math.cos(yaw)); camera.lookAt(0,0,0); }
 // pointer handling: 1 finger/mouse = rotate, 2 fingers = pinch zoom (touch-action:none keeps the page from scrolling)
 const ptrs=new Map(); let pinch0=null;
 const el=renderer.domElement;
@@ -138,13 +180,20 @@ el.addEventListener('pointermove',e=>{ if(!ptrs.has(e.pointerId)) return; e.prev
   ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(ptrs.size===2 && pinch0){ const [a,b]=[...ptrs.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); dist=Math.max(ext*0.8,Math.min(ext*12,pinch0.dist*pinch0.d/Math.max(d,1))); } });
 const release=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) pinch0=null; };
+el.addEventListener('dblclick',()=>{ yaw=YAW0; pitch=PITCH0; dist=fitDist(); });
 el.addEventListener('pointerup',release); el.addEventListener('pointercancel',release); el.addEventListener('lostpointercapture',release);
 ['touchstart','touchmove'].forEach(t=>el.addEventListener(t,e=>e.preventDefault(),{passive:false}));
 renderer.domElement.addEventListener('wheel',e=>{ e.preventDefault(); dist=Math.max(ext*0.8,Math.min(ext*12,dist*(1+e.deltaY*0.001))); },{passive:false});
 function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); dist=fitDist(); } addEventListener('resize',resize); resize();
 // controls
-playBtn.onclick=()=>{ playing=!playing; playBtn.textContent=playing?'一時停止':'再生'; };
-tEl.addEventListener('input',()=>{ playing=false; playBtn.textContent='再生'; t=tEl.value/1000; });
+// a finished one-shot run (or a fully folded paused sheet) replays from flat
+playBtn.onclick=()=>{ if(!playing&&(phase==='done'||t>=1&&phase==='fold')){ t=0; phase='fold'; } setPlaying(!playing); };
+tEl.addEventListener('input',()=>{ setPlaying(false); t=tEl.value/1000; phase='fold'; });
+addEventListener('keydown',e=>{ const n=DATA.targets.length, onCtl=/^(INPUT|BUTTON|A)$/.test(e.target.tagName);
+  if(e.key===' '&&!onCtl){ e.preventDefault(); playBtn.click(); }
+  else if(e.key==='ArrowRight'&&e.target.type!=='range'){ e.preventDefault(); pick((target+1)%n); }
+  else if(e.key==='ArrowLeft'&&e.target.type!=='range'){ e.preventDefault(); pick((target+n-1)%n); }
+  else if(e.key==='Escape') showHelp(false); });
 const ease=x=>x;   // linear: constant folding speed
 let hold=0, last=performance.now();
 function frame(now){
@@ -157,7 +206,7 @@ function frame(now){
     tEl.value=Math.round(t*1000);
   }
   pose(ease(t)); cam();
-  const tg=DATA.targets[target]; stateEl.innerHTML='<b>'+tg.label+'</b> 　折り '+Math.round(t*100)+'%';
+  stateEl.textContent=Math.round(t*100)+'%';
   renderer.render(scene,camera); requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
