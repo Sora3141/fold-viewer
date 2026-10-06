@@ -13,27 +13,66 @@ def _proj(pt,yaw=0.65,pitch=0.5):
     cx,sx=math.cos(yaw),math.sin(yaw); x1=cx*x-sx*y; y1=sx*x+cx*y; z1=z
     cp,sp=math.cos(pitch),math.sin(pitch); y2=cp*y1-sp*z1; z2=sp*y1+cp*z1
     return (x1, -z2, y2)   # screen x, screen y (down), depth (larger = farther)
+def _hull(P):
+    P=sorted(set(P)); 
+    if len(P)<3: return P
+    cr=lambda o,a,b:(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]); lo=[]; up=[]
+    for q in P:
+        while len(lo)>=2 and cr(lo[-2],lo[-1],q)<=1e-12: lo.pop()
+        lo.append(q)
+    for q in reversed(P):
+        while len(up)>=2 and cr(up[-2],up[-1],q)<=1e-12: up.pop()
+        up.append(q)
+    return lo[:-1]+up[:-1]
+def _area(pg): return abs(sum(pg[i][0]*pg[(i+1)%len(pg)][1]-pg[(i+1)%len(pg)][0]*pg[i][1] for i in range(len(pg))))/2
+def _plane(poly3):
+    a,b,c=poly3[:3]; u=[b[i]-a[i] for i in range(3)]; v=[c[i]-a[i] for i in range(3)]
+    n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]]; L=math.sqrt(sum(x*x for x in n)) or 1; n=[x/L for x in n]
+    return tuple(round(x,3) for x in n)+(round(sum(n[i]*a[i] for i in range(3)),3),)
 def svg_solid(d,ti,size=110):
-    t=d['targets'][ti]; polys=[]
+    """立体の絵。面ごとに塗り，パネルの継ぎ目（折り線や他の立体の折り目）は描かず，面の縁だけを描く。"""
+    t=d['targets'][ti]; faces={}
     for pid,poly3 in enumerate(t['target3d']):
-        pts=[_proj(tuple(v)) for v in poly3]; dep=sum(p[2] for p in pts)/len(pts)
-        polys.append((dep,[(p[0],p[1]) for p in pts],t['colors'][pid]))
+        faces.setdefault((_plane(poly3),t['colors'][pid]),[]).append([_proj(tuple(v)) for v in poly3])
+    polys=[]
+    for (pl,col),pans in faces.items():
+        dep=sum(p[2] for pg in pans for p in pg)/sum(len(pg) for pg in pans)
+        flat=[[(p[0],p[1]) for p in pg] for pg in pans]; H=_hull([q for pg in flat for q in pg])
+        convex=len(H)>=3 and abs(_area(H)-sum(_area(pg) for pg in flat))<1e-6*max(1,_area(H))
+        polys.append((dep,flat,H if convex else None,col))
     polys.sort(key=lambda x:-x[0])   # far first
-    xs=[x for _,pg,_ in polys for x,y in pg]; ys=[y for _,pg,_ in polys for x,y in pg]
+    xs=[x for _,fl,_,_ in polys for pg in fl for x,y in pg]; ys=[y for _,fl,_,_ in polys for pg in fl for x,y in pg]
     mnx,mxx,mny,mxy=min(xs),max(xs),min(ys),max(ys); sc=(size-10)/max(mxx-mnx,mxy-mny,1e-9)
     ox=(size-(mxx-mnx)*sc)/2-mnx*sc; oy=(size-(mxy-mny)*sc)/2-mny*sc
+    pts=lambda pg:' '.join(f'{x*sc+ox:.1f},{y*sc+oy:.1f}' for x,y in pg)
     out=[f'<svg viewBox="0 0 {size} {size}" width="{size}" height="{size}" role="img" aria-label="{t["label"]}">']
-    for _,pg,col in polys:
-        out.append('<polygon points="'+' '.join(f'{x*sc+ox:.1f},{y*sc+oy:.1f}' for x,y in pg)+f'" fill="{col}" stroke="#2a2f36" stroke-width="0.8" stroke-linejoin="round"/>')
+    for _,fl,H,col in polys:
+        if H: out.append(f'<polygon points="{pts(H)}" fill="{col}" stroke="#2a2f36" stroke-width="0.8" stroke-linejoin="round"/>')
+        else:   # 凸でない面（ポリキューブ）は継ぎ目を塗りの色で隠す
+            out+= [f'<polygon points="{pts(pg)}" fill="{col}" stroke="{col}" stroke-width="0.6" stroke-linejoin="round"/>' for pg in fl]
     out.append('</svg>'); return ''.join(out)
 def svg_net(d,size=110):
+    """展開図の絵。立体 0 の面の色で塗り，折り線は描かず，紙の縁だけを描く。"""
     t=d['targets'][0]; polys=[(pan['poly'],t['colors'][i]) for i,pan in enumerate(d['panels'])]
     xs=[x for pg,_ in polys for x,y in pg]; ys=[y for pg,_ in polys for x,y in pg]
     mnx,mxx,mny,mxy=min(xs),max(xs),min(ys),max(ys); sc=(size-8)/max(mxx-mnx,mxy-mny)
     ox=(size-(mxx-mnx)*sc)/2-mnx*sc; oy=(size-(mxy-mny)*sc)/2+mxy*sc
     out=[f'<svg viewBox="0 0 {size} {size}" width="{size}" height="{size}" role="img" aria-label="展開図">']
     for pg,col in polys:
-        out.append('<polygon points="'+' '.join(f'{x*sc+ox:.1f},{oy-y*sc:.1f}' for x,y in pg)+f'" fill="{col}" stroke="#2a2f36" stroke-width="0.6"/>')
+        out.append('<polygon points="'+' '.join(f'{x*sc+ox:.1f},{oy-y*sc:.1f}' for x,y in pg)+f'" fill="{col}" stroke="{col}" stroke-width="0.6"/>')
+    E=[(pg[k],pg[(k+1)%len(pg)]) for pg,_ in polys for k in range(len(pg))]; G={}
+    for i,(a,b) in enumerate(E):   # 辺を通るマスに登録（中点の近くだけ調べる）
+        for gx in range(math.floor(min(a[0],b[0])-1e-9),math.floor(max(a[0],b[0])+1e-9)+1):
+            for gy in range(math.floor(min(a[1],b[1])-1e-9),math.floor(max(a[1],b[1])+1e-9)+1): G.setdefault((gx,gy),[]).append(i)
+    def on(m,a,b):
+        cr=(b[0]-a[0])*(m[1]-a[1])-(b[1]-a[1])*(m[0]-a[0])
+        return abs(cr)<1e-7 and min(a[0],b[0])-1e-9<=m[0]<=max(a[0],b[0])+1e-9 and min(a[1],b[1])-1e-9<=m[1]<=max(a[1],b[1])+1e-9
+    seg=[]
+    for i,(a,b) in enumerate(E):   # 紙の縁 = 中点がほかのパネルの辺に乗らない辺
+        m=((a[0]+b[0])/2,(a[1]+b[1])/2)
+        if not any(j!=i and on(m,*E[j]) for j in G.get((math.floor(m[0]),math.floor(m[1])),())):
+            seg.append(f'M{a[0]*sc+ox:.1f} {oy-a[1]*sc:.1f}L{b[0]*sc+ox:.1f} {oy-b[1]*sc:.1f}')
+    out.append(f'<path d="{"".join(seg)}" stroke="#2a2f36" stroke-width="0.8" fill="none" stroke-linecap="round"/>')
     out.append('</svg>'); return ''.join(out)
 apps=json.load(open('apps.json')); tpl=open('template.html').read()
 HEAD='<!doctype html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
