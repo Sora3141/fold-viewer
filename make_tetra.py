@@ -18,7 +18,7 @@ def dihedrals(a,b,c):
         e=V[j]-V[i]; e/=np.linalg.norm(e); z,w=[V[k]-V[i] for k in range(4) if k not in (i,j)]
         z-=z.dot(e)*e; w-=w.dot(e)*e
         out[round(float((V[j]-V[i])@(V[j]-V[i])))]=math.acos(z@w/np.linalg.norm(z)/np.linalg.norm(w))
-    assert sorted(out)==sorted({a,b,c}) and len(out)==3,(a,b,c)   # 3 つの辺²が互いに異なること
+    assert sorted(out)==sorted({a,b,c}),(a,b,c)   # 辺²が等しい対は二面角も等しい（二等辺の面でもよい）
     return out
 
 def tetra_target(cells,edges):
@@ -69,7 +69,29 @@ def build(conway,spec_folds,tet_pick,labels,specs,out,title):
     tets=[tetra_target(cells,e) for (e,fl) in ent['tetra'] if not fl]
     fe.export(row,specs,out,title,labels=labels,extra=tets)
 
-if __name__=='__main__':
+def build_cells(cells,boxes,out,title):
+    """セルの一覧から直接作る（tetra_all.py の出力用）。箱の折り方は obox.kfull で全部出し，折り方ごとに 1 つの目標にする。"""
+    import obox
+    cells=[tuple(c) for c in cells]; folds=[]; specs=[]; labels=[]
+    for b in boxes:
+        K=obox.kfull(obox.surface(b),cells)
+        for j,st in enumerate(K):
+            folds.append([st]); specs.append(b); labels.append(b.replace('x','×')+(f'（折り方 {j+1}）' if len(K)>1 else ''))
+    s=CW.boundary(cells); T=sorted({t for t in (CW.check(s,c) for c in CW.factorizations(s)) if t and not t[1]})
+    tets=[tetra_target(cells,e) for e,fl in T]
+    fe.export({'cells':cells,'folds':folds},specs,out,title,labels=labels,extra=tets)
+    return len(folds),len(tets)
+
+NEW=[  # tetra_all.py で見つけたもの（分析 §21）。(名前, セル, 箱, 題)
+    ('tetra_a14',[(0,0),(1,0),(2,0),(3,0),(4,0),(5,0),(6,0),(4,1),(5,1),(6,1),(7,1),(8,1),(9,1),(10,1)],['1x1x3'],'面積 14：1×1×3 と等面四面体 11 種'),
+]
+
+if __name__=='__main__' and sys.argv[1:2]==['new']:
+    A=os.path.join(ROOT,'アプリ')
+    for name,cells,boxes,title in NEW:
+        if len(sys.argv)>2 and name not in sys.argv[2:]: continue
+        print(name,build_cells(cells,boxes,f'{A}/data/data_{name}.json',title))
+elif __name__=='__main__':
     A=os.path.join(ROOT,'アプリ'); W=os.path.join(ROOT,'分析','work')
     build(f'{W}/conway_a22.json',(f'{W}/rows_a22_common.json',lambda r:[r['folds'][0],[r['folds'][1][0]],[r['folds'][1][1]]]),
           lambda c:c['k']==[1,2],['1×1×5','1×2×3（折り方 1）','1×2×3（折り方 2）'],['1x1x5','1x2x3','1x2x3'],

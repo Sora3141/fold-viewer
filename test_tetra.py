@@ -39,6 +39,6 @@ for f in sorted(glob.glob(os.path.join(ROOT,'アプリ','data','data_tetra_*.jso
         hull=ConvexHull(corners).area; assert abs(hull-tot)<1e-6,(hull,tot)
         e=sorted(round(float(np.sum((a-b)**2)),6) for i,a in enumerate(corners) for b in corners[i+1:])
         want=[int(x[1:]) for x in re.findall(r'√\d+',t['label'])]; got=sorted({round(x/e[0]*want[0]) for x in e})
-        assert got==sorted(want),(got,want)
+        assert got==sorted(set(want)),(got,want)
         assert e[0]==e[1] and e[2]==e[3] and e[4]==e[5]
     print('OK',os.path.basename(f),len(d["panels"]),"panels",len(d['targets']),'targets')
