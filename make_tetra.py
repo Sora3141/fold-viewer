@@ -21,13 +21,14 @@ def dihedrals(a,b,c):
     assert sorted(out)==sorted({a,b,c}),(a,b,c)   # 辺²が等しい対は二面角も等しい（二等辺の面でもよい）
     return out
 
-def tetra_target(cells,edges):
-    """cells の周から Conway の分け方を探し，edges（辺² 3 つ）の四面体になるものの格子から折り線と折り角を作る。"""
+def tetra_target(cells,edges,cuts=None,tag=''):
+    """cells の周から Conway の分け方を探し，edges（辺² 3 つ）の四面体になるものの格子から折り線と折り角を作る。cuts を渡せばその分け方を使う。"""
     s=CW.boundary(cells)
-    for cuts in CW.factorizations(s):
-        t=CW.check(s,cuts)
-        if t and t[0]==tuple(edges) and not t[1]: break
-    else: raise SystemExit(f'見つからない {edges}')
+    if cuts is None:
+        for cuts in CW.factorizations(s):
+            t=CW.check(s,cuts)
+            if t and t[0]==tuple(edges) and not t[1]: break
+        else: raise SystemExit(f'見つからない {edges}')
     P,mB,u,v=CW.lattice(s,cuts); sx=min(x for x,y in cells); sy=min(y for x,y in cells if x==sx)
     corners={(x+i,y+j) for x,y in cells for i in (0,1) for j in (0,1)}
     assert all((x+sx,y+sy) in corners for x,y in P)   # 周の開始点の取り違えがないこと
@@ -60,7 +61,7 @@ def tetra_target(cells,edges):
         assert len(key)==4,key      # 面が 4 つの平面に収まる
         return [fe.COLORS[c] for c in cols]
     g=math.gcd(math.gcd(edges[0],edges[1]),edges[2])
-    return {'label':'等面四面体（辺 '+':'.join(f'√{e//g}' for e in edges)+'）','lines':lines,'angle':angle,'colors':colors}
+    return {'label':'等面四面体（辺 '+':'.join(f'√{e//g}' for e in edges)+'）'+tag,'lines':lines,'angle':angle,'colors':colors}
 
 def build(conway,spec_folds,tet_pick,labels,specs,out,title):
     C=json.load(open(conway)); ent=[c for c in C if tet_pick(c)][0]; cells=[tuple(c) for c in ent['cells']]
@@ -69,7 +70,20 @@ def build(conway,spec_folds,tet_pick,labels,specs,out,title):
     tets=[tetra_target(cells,e) for (e,fl) in ent['tetra'] if not fl]
     fe.export(row,specs,out,title,labels=labels,extra=tets)
 
-def build_cells(cells,boxes,out,title):
+def tetra_folds(cells):
+    """四面体ごとに，折り方の違う（回転の中心の格子が違う，紙の対称で移らない）分け方を全部 [(辺², cuts, 番号)]"""
+    import tetra_all as TA
+    s=CW.boundary(cells); sx=min(x for x,y in cells); base=(sx,min(y for x,y in cells if x==sx)); sym=TA.symmetries(cells)
+    reps={}
+    for cuts in CW.factorizations(s):
+        t=CW.check(s,cuts)
+        if not t or t[1]: continue
+        L=TA.latt(s,cuts,base); R=reps.setdefault(t[0],[])
+        imgs=[((M(*L[0])[0]+2*d[0],M(*L[0])[1]+2*d[1]),M(*L[1]),M(*L[2])) for M,d in sym]
+        if not any(TA.same(r[0],I) for r in R for I in imgs): R.append((L,cuts))
+    return [(e,c,j+1,len(R)) for e,R in sorted(reps.items()) for j,(L,c) in enumerate(R)]
+
+def build_cells(cells,boxes,out,title,allfolds=False):
     """セルの一覧から直接作る（tetra_all.py の出力用）。箱の折り方は obox.kfull で全部出し，折り方ごとに 1 つの目標にする。"""
     import obox
     cells=[tuple(c) for c in cells]; folds=[]; specs=[]; labels=[]
@@ -78,19 +92,21 @@ def build_cells(cells,boxes,out,title):
         for j,st in enumerate(K):
             folds.append([st]); specs.append(b); labels.append(b.replace('x','×')+(f'（折り方 {j+1}）' if len(K)>1 else ''))
     s=CW.boundary(cells); T=sorted({t for t in (CW.check(s,c) for c in CW.factorizations(s)) if t and not t[1]})
-    tets=[tetra_target(cells,e) for e,fl in T]
+    tets=[tetra_target(cells,e) for e,fl in T] if not allfolds else \
+         [tetra_target(cells,e,c,f'（折り方 {j}）' if n>1 else '') for e,c,j,n in tetra_folds(cells)]
     fe.export({'cells':cells,'folds':folds},specs,out,title,labels=labels,extra=tets)
     return len(folds),len(tets)
 
 NEW=[  # tetra_all.py で見つけたもの（分析 §21）。(名前, セル, 箱, 題)
-    ('tetra_a14',[(0,0),(1,0),(2,0),(3,0),(4,0),(5,0),(6,0),(4,1),(5,1),(6,1),(7,1),(8,1),(9,1),(10,1)],['1x1x3'],'面積 14：1×1×3 と等面四面体 11 種'),
+    ('tetra_a14',[(0,0),(1,0),(2,0),(3,0),(4,0),(5,0),(6,0),(4,1),(5,1),(6,1),(7,1),(8,1),(9,1),(10,1)],['1x1x3'],'面積 14：1×1×3 と等面四面体 11 種',False),
+    ('tetra_cube_w',[(0,0),(1,0),(1,1),(2,1),(2,2),(3,2)],['1x1x1'],'立方体の展開図（階段形）：立方体と，等面四面体 4 種に 9 通り',True),
 ]
 
 if __name__=='__main__' and sys.argv[1:2]==['new']:
     A=os.path.join(ROOT,'アプリ')
-    for name,cells,boxes,title in NEW:
+    for name,cells,boxes,title,allf in NEW:
         if len(sys.argv)>2 and name not in sys.argv[2:]: continue
-        print(name,build_cells(cells,boxes,f'{A}/data/data_{name}.json',title))
+        print(name,build_cells(cells,boxes,f'{A}/data/data_{name}.json',title,allfolds=allf))
 elif __name__=='__main__':
     A=os.path.join(ROOT,'アプリ'); W=os.path.join(ROOT,'分析','work')
     build(f'{W}/conway_a22.json',(f'{W}/rows_a22_common.json',lambda r:[r['folds'][0],[r['folds'][1][0]],[r['folds'][1][1]]]),
