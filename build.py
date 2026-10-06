@@ -30,10 +30,10 @@ def _plane(poly3):
     n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]]; L=math.sqrt(sum(x*x for x in n)) or 1; n=[x/L for x in n]
     return tuple(round(x,3) for x in n)+(round(sum(n[i]*a[i] for i in range(3)),3),)
 def svg_solid(d,ti,size=110):
-    """立体の絵。面ごとに塗り，パネルの継ぎ目（折り線や他の立体の折り目）は描かず，面の縁だけを描く。"""
-    t=d['targets'][ti]; faces={}
+    """立体の絵。面ごとに塗り，パネルの継ぎ目（折り線や他の立体の折り目）は描かず，面の縁と（薄く）マスの境目だけを描く。"""
+    t=d['targets'][ti]; faces={}; fpid={}
     for pid,poly3 in enumerate(t['target3d']):
-        faces.setdefault((_plane(poly3),t['colors'][pid]),[]).append([_proj(tuple(v)) for v in poly3])
+        k=(_plane(poly3),t['colors'][pid]); faces.setdefault(k,[]).append([_proj(tuple(v)) for v in poly3]); fpid.setdefault(k,[]).append(pid)
     polys=[]
     for (pl,col),pans in faces.items():
         dep=sum(p[2] for pg in pans for p in pg)/sum(len(pg) for pg in pans)
@@ -57,10 +57,22 @@ def svg_solid(d,ti,size=110):
     ox=(size-(mxx-mnx)*sc)/2-mnx*sc; oy=(size-(mxy-mny)*sc)/2-mny*sc
     pts=lambda pg:' '.join(f'{x*sc+ox:.1f},{y*sc+oy:.1f}' for x,y in pg)
     out=[f'<svg viewBox="0 0 {size} {size}" width="{size}" height="{size}" role="img" aria-label="{t["label"]}">']
-    for _,fl,H,col,_ in polys:
-        if H: out.append(f'<polygon points="{pts(H)}" fill="{col}" stroke="#2a2f36" stroke-width="0.8" stroke-linejoin="round"/>')
+    isint=lambda x:abs(x-round(x))<1e-9
+    def gridlines(key):   # この面に乗っているマスの境目（紙の上でマス目に乗るパネルの辺）を薄く
+        seen=set(); seg=[]
+        for pid in fpid[key]:
+            pg2=d['panels'][pid]['poly']; pg3=t['target3d'][pid]; n=len(pg2)
+            for k in range(n):
+                a,b=pg2[k],pg2[(k+1)%n]
+                if not ((isint(a[0]) and abs(a[0]-b[0])<1e-9) or (isint(a[1]) and abs(a[1]-b[1])<1e-9)): continue
+                A=_proj(tuple(pg3[k])); B=_proj(tuple(pg3[(k+1)%n])); kk=tuple(sorted(((round(A[0],5),round(A[1],5)),(round(B[0],5),round(B[1],5)))))
+                if kk in seen: continue
+                seen.add(kk); seg.append(f'M{A[0]*sc+ox:.1f} {A[1]*sc+oy:.1f}L{B[0]*sc+ox:.1f} {B[1]*sc+oy:.1f}')
+        return f'<path d="{"".join(seg)}" stroke="#2a2f36" stroke-opacity="0.35" stroke-width="0.5" fill="none"/>' if seg else ''
+    for _,fl,H,col,key in polys:
+        if H: out.append(f'<polygon points="{pts(H)}" fill="{col}" stroke="none"/>'+gridlines(key)+f'<polygon points="{pts(H)}" fill="none" stroke="#2a2f36" stroke-width="0.8" stroke-linejoin="round"/>')
         else:   # 凸でない面（ポリキューブ）は継ぎ目を塗りの色で隠す
-            out+= [f'<polygon points="{pts(pg)}" fill="{col}" stroke="{col}" stroke-width="0.6" stroke-linejoin="round"/>' for pg in fl]
+            out+= [f'<polygon points="{pts(pg)}" fill="{col}" stroke="{col}" stroke-width="0.6" stroke-linejoin="round"/>' for pg in fl]; out.append(gridlines(key))
     out.append('</svg>'); return ''.join(out)
 def svg_net(d,size=110):
     """展開図の絵。立体 0 の面の色で塗り，折り線は描かず，紙の縁と（薄く）マスの境目だけを描く。"""
