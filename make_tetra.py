@@ -83,7 +83,7 @@ def tetra_folds(cells):
         if not any(TA.same(r[0],I) for r in R for I in imgs): R.append((L,cuts))
     return [(e,c,j+1,len(R)) for e,R in sorted(reps.items()) for j,(L,c) in enumerate(R)]
 
-def build_cells(cells,boxes,out,title,allfolds=False):
+def build_cells(cells,boxes,out,title,allfolds=False,only=None):
     """セルの一覧から直接作る（tetra_all.py の出力用）。箱の折り方は obox.kfull で全部出し，折り方ごとに 1 つの目標にする。"""
     import obox
     cells=[tuple(c) for c in cells]; folds=[]; specs=[]; labels=[]
@@ -93,12 +93,14 @@ def build_cells(cells,boxes,out,title,allfolds=False):
             folds.append([st]); specs.append(b); labels.append(b.replace('x','×')+(f'（折り方 {j+1}）' if len(K)>1 else ''))
     s=CW.boundary(cells); T=sorted({t for t in (CW.check(s,c) for c in CW.factorizations(s)) if t and not t[1]})
     tets=[tetra_target(cells,e) for e,fl in T] if not allfolds else \
-         [tetra_target(cells,e,c,f'（折り方 {j}）' if n>1 else '') for e,c,j,n in tetra_folds(cells)]
+         [tetra_target(cells,e,c,f'（折り方 {j}）' if n>1 else '') for e,c,j,n in tetra_folds(cells) if only is None or e==only]
     fe.export({'cells':cells,'folds':folds},specs,out,title,labels=labels,extra=tets)
     return len(folds),len(tets)
 
 NEW=[  # tetra_all.py で見つけたもの（分析 §21）。(名前, セル, 箱, 題)
     ('tetra_a14',[(0,0),(1,0),(2,0),(3,0),(4,0),(5,0),(6,0),(4,1),(5,1),(6,1),(7,1),(8,1),(9,1),(10,1)],['1x1x3'],'面積 14：1×1×3 と等面四面体 11 種',False),
+    ('tetra_a22_115',[(0,y) for y in range(11)]+[(1,y) for y in range(6,17)],['1x1x5'],'面積 22：1×1×5 と等面四面体 16 種',False),
+    ('tetra_a22_115_13',[(0,y) for y in range(11)]+[(1,y) for y in range(6,17)],['1x1x5'],'面積 22：1×1×5 と，同じ等面四面体に 13 通り','MAX'),
     ('tetra_cube_w',[(0,0),(1,0),(1,1),(2,1),(2,2),(3,2)],['1x1x1'],'立方体の展開図（階段形）：立方体と，等面四面体 4 種に 9 通り',True),
 ]
 
@@ -106,7 +108,11 @@ if __name__=='__main__' and sys.argv[1:2]==['new']:
     A=os.path.join(ROOT,'アプリ')
     for name,cells,boxes,title,allf in NEW:
         if len(sys.argv)>2 and name not in sys.argv[2:]: continue
-        print(name,build_cells(cells,boxes,f'{A}/data/data_{name}.json',title,allfolds=allf))
+        only=None
+        if allf=='MAX':   # 折り方が一番多い四面体だけ，その折り方を全部
+            from collections import Counter
+            only=Counter(e for e,c,j,n in tetra_folds(cells)).most_common(1)[0][0]
+        print(name,build_cells(cells,boxes,f'{A}/data/data_{name}.json',title,allfolds=bool(allf),only=only))
 elif __name__=='__main__':
     A=os.path.join(ROOT,'アプリ'); W=os.path.join(ROOT,'分析','work')
     build(f'{W}/conway_a22.json',(f'{W}/rows_a22_common.json',lambda r:[r['folds'][0],[r['folds'][1][0]],[r['folds'][1][1]]]),
