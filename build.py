@@ -39,14 +39,25 @@ def svg_solid(d,ti,size=110):
         dep=sum(p[2] for pg in pans for p in pg)/sum(len(pg) for pg in pans)
         flat=[[(p[0],p[1]) for p in pg] for pg in pans]; H=_hull([q for pg in flat for q in pg])
         convex=len(H)>=3 and abs(_area(H)-sum(_area(pg) for pg in flat))<1e-6*max(1,_area(H))
-        polys.append((dep,flat,H if convex else None,col))
+        polys.append((dep,flat,H if convex else None,col,(pl,col)))
     polys.sort(key=lambda x:-x[0])   # far first
-    xs=[x for _,fl,_,_ in polys for pg in fl for x,y in pg]; ys=[y for _,fl,_,_ in polys for pg in fl for x,y in pg]
+    # 凸な立体（箱・四面体）は裏を向いた面を描かない。細長い四面体では面の重心の深さで並べると裏の面が手前に来るため
+    P=[p for pans in faces.values() for pg in pans for p in pg]; cen=[sum(p[k] for p in P)/len(P) for k in range(3)]
+    def facing(pans):
+        a,b,c=pans[0][:3]; u=[b[k]-a[k] for k in range(3)]; v=[c[k]-a[k] for k in range(3)]
+        n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]]; off=sum(n[k]*a[k] for k in range(3))
+        side=[sum(n[k]*q[k] for k in range(3))-off for q in P]; L=math.sqrt(sum(x*x for x in n)) or 1
+        if sum(n[k]*(a[k]-cen[k]) for k in range(3))<0: n=[-x for x in n]; side=[-x for x in side]
+        return max(side)<=1e-6*L*max(1,max(abs(x) for x in P[0])), n[2]<0   # (立体がこの面の内側にある, 視点（深さの小さい側）を向く)
+    F=[facing(pans) for pans in faces.values()]
+    if all(cv for cv,_ in F):
+        vis={k for k,(cv,fr) in zip(faces,F) if fr}; polys=[pp for pp in polys if pp[4] in vis]
+    xs=[x for _,fl,_,_,_ in polys for pg in fl for x,y in pg]; ys=[y for _,fl,_,_,_ in polys for pg in fl for x,y in pg]
     mnx,mxx,mny,mxy=min(xs),max(xs),min(ys),max(ys); sc=(size-10)/max(mxx-mnx,mxy-mny,1e-9)
     ox=(size-(mxx-mnx)*sc)/2-mnx*sc; oy=(size-(mxy-mny)*sc)/2-mny*sc
     pts=lambda pg:' '.join(f'{x*sc+ox:.1f},{y*sc+oy:.1f}' for x,y in pg)
     out=[f'<svg viewBox="0 0 {size} {size}" width="{size}" height="{size}" role="img" aria-label="{t["label"]}">']
-    for _,fl,H,col in polys:
+    for _,fl,H,col,_ in polys:
         if H: out.append(f'<polygon points="{pts(H)}" fill="{col}" stroke="#2a2f36" stroke-width="0.8" stroke-linejoin="round"/>')
         else:   # 凸でない面（ポリキューブ）は継ぎ目を塗りの色で隠す
             out+= [f'<polygon points="{pts(pg)}" fill="{col}" stroke="{col}" stroke-width="0.6" stroke-linejoin="round"/>' for pg in fl]
