@@ -63,7 +63,7 @@ def svg_solid(d,ti,size=110):
             out+= [f'<polygon points="{pts(pg)}" fill="{col}" stroke="{col}" stroke-width="0.6" stroke-linejoin="round"/>' for pg in fl]
     out.append('</svg>'); return ''.join(out)
 def svg_net(d,size=110):
-    """展開図の絵。立体 0 の面の色で塗り，折り線は描かず，紙の縁だけを描く。"""
+    """展開図の絵。立体 0 の面の色で塗り，折り線は描かず，紙の縁と（薄く）マスの境目だけを描く。"""
     t=d['targets'][0]; polys=[(pan['poly'],t['colors'][i]) for i,pan in enumerate(d['panels'])]
     xs=[x for pg,_ in polys for x,y in pg]; ys=[y for pg,_ in polys for x,y in pg]
     mnx,mxx,mny,mxy=min(xs),max(xs),min(ys),max(ys); sc=(size-8)/max(mxx-mnx,mxy-mny)
@@ -78,11 +78,14 @@ def svg_net(d,size=110):
     def on(m,a,b):
         cr=(b[0]-a[0])*(m[1]-a[1])-(b[1]-a[1])*(m[0]-a[0])
         return abs(cr)<1e-7 and min(a[0],b[0])-1e-9<=m[0]<=max(a[0],b[0])+1e-9 and min(a[1],b[1])-1e-9<=m[1]<=max(a[1],b[1])+1e-9
-    seg=[]
-    for i,(a,b) in enumerate(E):   # 紙の縁 = 中点がほかのパネルの辺に乗らない辺
-        m=((a[0]+b[0])/2,(a[1]+b[1])/2)
-        if not any(j!=i and on(m,*E[j]) for j in G.get((math.floor(m[0]),math.floor(m[1])),())):
-            seg.append(f'M{a[0]*sc+ox:.1f} {oy-a[1]*sc:.1f}L{b[0]*sc+ox:.1f} {oy-b[1]*sc:.1f}')
+    seg=[]; grid=[]; seen=set(); isint=lambda x:abs(x-round(x))<1e-9
+    for i,(a,b) in enumerate(E):   # 紙の縁 = 中点がほかのパネルの辺に乗らない辺。内側でマス目に乗る辺はマスの境目
+        m=((a[0]+b[0])/2,(a[1]+b[1])/2); d=f'M{a[0]*sc+ox:.1f} {oy-a[1]*sc:.1f}L{b[0]*sc+ox:.1f} {oy-b[1]*sc:.1f}'
+        if not any(j!=i and on(m,*E[j]) for j in G.get((math.floor(m[0]),math.floor(m[1])),())): seg.append(d)
+        elif (isint(a[0]) and abs(a[0]-b[0])<1e-9) or (isint(a[1]) and abs(a[1]-b[1])<1e-9):
+            k=tuple(sorted((tuple(round(x,6) for x in a),tuple(round(x,6) for x in b))))
+            if k not in seen: seen.add(k); grid.append(d)   # 隣り合う 2 枚のパネルで同じ辺を 2 回描かない
+    out.append(f'<path d="{"".join(grid)}" stroke="#2a2f36" stroke-opacity="0.35" stroke-width="0.5" fill="none"/>')
     out.append(f'<path d="{"".join(seg)}" stroke="#2a2f36" stroke-width="0.8" fill="none" stroke-linecap="round"/>')
     out.append('</svg>'); return ''.join(out)
 apps=json.load(open('apps.json')); tpl=open('template.html').read()
