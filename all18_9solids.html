@@ -72,7 +72,7 @@ button.ghost:hover{border-color:var(--ink)}
 <div class="help" id="help" hidden>
   <p class="note">面積 18 では最大 10 種に折れる展開図が 7 個ある。この 1 個は紙を裏返さずに 9 種へ折れ，立方体 3 個の辺接続立体 5 種すべてを含む（#009 には 3 通り，#010 には 2 通り）。残り 1 種は紙を裏返した向きでのみ折れるため省いた。</p>
   <p>ドラッグで回転、ホイール・ピンチで拡大、ダブルクリックで視点を戻す。<kbd>Space</kbd> 再生　<kbd>←</kbd><kbd>→</kbd> 立体を切り替え</p>
-  <p>黒い線は紙の縁といま折る折り目、薄い線はマスの境目や他の折り方の折り目（この折り方では平ら）。折り目の角度を一斉に動かしているので、途中で面が重なって見えることがあります。</p>
+  <p>黒い線は紙の縁といま折る折り目、薄い線はマスの境目（この折り方では平ら）。ほかの立体の折り目は出していません。折り目の角度を一斉に動かしているので、途中で面が重なって見えることがあります。</p>
 </div>
 <div class="bar" id="bottom">
   <div class="row">
@@ -116,6 +116,8 @@ for(let i=0;i<panelEdges.length;i++) for(const e of panelEdges[i]){ const m=[(e.
   outer: for(let j=0;j<panelEdges.length;j++){ if(j===i) continue; for(const f of panelEdges[j]){ if(onSeg(m,f.a,f.b)&&onSeg(e.a,f.a,f.b)&&onSeg(e.b,f.a,f.b)||onSeg(m,f.a,f.b)&&onSeg(f.a,e.a,e.b)&&onSeg(f.b,e.a,e.b)){ e.partner=j; break outer; } } } }
 function normalOf(poly3){ const [a,b,c]=[poly3[0],poly3[1],poly3[2]]; const u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]], v=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
   const n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]]; const L=Math.hypot(...n)||1; return n.map(x=>x/L); }
+const isInt=x=>Math.abs(x-Math.round(x))<1e-6;
+function onGrid(e){ return (isInt(e.a[0])&&Math.abs(e.a[0]-e.b[0])<1e-6)||(isInt(e.a[1])&&Math.abs(e.a[1]-e.b[1])<1e-6); }   // マスの境目（整数の縦線・横線の上）
 function classifyEdges(ti){
   const T3=DATA.targets[ti].target3d; const N=T3.map(normalOf);
   panels.forEach((p,i)=>{ const sets={bnd:[],crease:[],flat:[]};
@@ -124,6 +126,7 @@ function classifyEdges(ti){
         // coplanar iff normals parallel and the partner's centroid lies in this panel's plane
         const c=T3[e.partner][0], p0=T3[i][0]; const d=(c[0]-p0[0])*a[0]+(c[1]-p0[1])*a[1]+(c[2]-p0[2])*a[2];
         kind=(Math.abs(dot-1)<1e-6&&Math.abs(d)<1e-6)?'flat':'crease'; }
+      if(kind==='flat'&&!onGrid(e)) continue;   // 他の立体だけの折り目は描かない（マスの境目だけ薄く残す）
       sets[kind].push(e.a[0],e.a[1],0,e.b[0],e.b[1],0); }
     for(const k in sets){ p.edge[k].geometry.dispose(); const g=new T.BufferGeometry(); g.setAttribute('position',new T.Float32BufferAttribute(sets[k],3)); p.edge[k].geometry=g; }
   });
