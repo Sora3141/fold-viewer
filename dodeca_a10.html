@@ -1,0 +1,210 @@
+<title>1×1×2 の箱と12面体（面積10）</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#eef0f3; --bg2:#e2e5ea; --ink:#1b2027; --muted:#5f6772; --line:#c9ced6;
+  --panel:#ffffffcc; --accent:#c8332b; --accent-ink:#ffffff; --chip:#ffffff; --chip-on:#1b2027;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181d; --bg2:#0f1114; --ink:#e8eaee; --muted:#9aa3ad; --line:#2c323a;
+    --panel:#1c2026dd; --accent:#e0554a; --accent-ink:#ffffff; --chip:#22272e; --chip-on:#e8eaee;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181d; --bg2:#0f1114; --ink:#e8eaee; --muted:#9aa3ad; --line:#2c323a;
+  --panel:#1c2026dd; --accent:#e0554a; --accent-ink:#ffffff; --chip:#22272e; --chip-on:#e8eaee;
+}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;overflow:hidden}
+#stage{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 60%,var(--bg) 0%,var(--bg2) 100%)}
+#stage canvas{display:block;outline:none;touch-action:none;-webkit-user-select:none;user-select:none}
+html,body{overscroll-behavior:none;-webkit-touch-callout:none}
+.bar{position:fixed;left:0;right:0;display:flex;align-items:center;gap:12px;padding:12px 18px;pointer-events:none}
+.bar > *{pointer-events:auto}
+#top{top:0;align-items:flex-start;padding-top:calc(12px + env(safe-area-inset-top,0px))}
+.title{display:flex;align-items:flex-start;gap:10px;min-width:0;flex:1 1 auto}
+.home{flex:0 0 auto;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--chip);color:var(--ink);text-decoration:none;font-size:16px}
+.home:hover{border-color:var(--accent)}
+h1{font-size:15px;font-weight:700;margin:0;letter-spacing:.02em;line-height:1.4}
+h1 small{display:block;font-weight:500;color:var(--muted);font-size:12px;margin-top:2px;max-width:60ch}
+.chips{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;max-width:56vw;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin;padding:2px 2px 4px}
+.chip{flex:0 0 auto;white-space:nowrap;scroll-snap-align:start;display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.chip .n{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;color:var(--muted)}
+.chip:hover{border-color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--chip-on);color:var(--bg);border-color:var(--chip-on)}
+.chip[aria-pressed="true"] .n{color:inherit;opacity:.7}
+.chip:focus-visible,button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#bottom{bottom:0;flex-direction:column;align-items:stretch;gap:8px;background:linear-gradient(to top,var(--bg) 55%,transparent);padding-top:32px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+.row{display:flex;align-items:center;gap:12px;max-width:760px;width:100%;margin:0 auto}
+#state{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;color:var(--muted);white-space:nowrap;min-width:4.5em;text-align:right}
+.label{font-weight:700;font-size:14px;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+button.play{flex:0 0 auto;display:grid;place-items:center;width:44px;height:44px;background:var(--accent);color:var(--accent-ink);border:0;border-radius:50%;cursor:pointer;box-shadow:0 2px 8px #0003}
+button.play svg{width:18px;height:18px;fill:currentColor}
+button.play .pause,button.play[aria-pressed="true"] .go{display:none}
+button.play[aria-pressed="true"] .pause{display:block}
+button.ghost{flex:0 0 auto;border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
+button.ghost:hover{border-color:var(--ink)}
+#t{flex:1 1 auto;min-width:0;accent-color:var(--accent);height:28px}
+.opts{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.opts label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.opts .sp{margin-left:auto}
+#speed{width:80px;accent-color:var(--accent)}
+.help{position:fixed;right:18px;top:calc(64px + env(safe-area-inset-top,0px));background:var(--panel);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--muted);width:min(280px,calc(100vw - 36px));line-height:1.6;box-shadow:0 6px 24px #0002}
+.help p{margin:0 0 8px} .help p:last-child{margin:0}
+.help .note{color:var(--ink);font-size:13px}
+.help kbd{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 4px;background:var(--chip)}
+#stage canvas{cursor:grab} #stage canvas:active{cursor:grabbing}
+@media (max-width:640px){
+  #top{flex-wrap:wrap;gap:8px}
+  h1 small{display:none}
+  .chips{max-width:100%;width:100%;mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent)}
+  .help{top:auto;bottom:calc(150px + env(safe-area-inset-bottom,0px));right:12px;left:12px;width:auto}
+  .opts{gap:10px}
+}
+@media (prefers-reduced-motion: reduce){ body{--dur:0} }
+</style>
+<div id="stage"></div>
+<div class="bar" id="top">
+  <div class="title"><h1>一枚の展開図，1×1×2 の箱と 12 面体に二通り<small>面積 10 の展開図が，1×1×2 の箱と，面が 12 枚の凸多面体（頂点 8・辺 18・三角形の面）に折れる — 12 面体には 2 通りの貼り合わせ</small></h1></div>
+  <div class="chips" id="chips" role="group" aria-label="折る立体"></div>
+</div>
+<div class="help" id="help" hidden>
+  <p class="note">12 面体の折り線は格子に限らない自由な貼り合わせ（面の色が 12 色）。凸で，面は平らな面の数。面積 10 がポリオミノから折れる 12 面体の最小で，面積 13 までの全ポリオミノで確かめた（面積 9 以下は無い）。ポリオミノから折れる凸多面体は，曲率の議論から頂点 8 以下・面 12 以下。面積 10 でこの 12 面体に折れるポリオミノ 2265 個のうち，1×1×2 にも折れるものは 580 個。</p>
+  <p>ドラッグで回転、ホイール・ピンチで拡大、ダブルクリックで視点を戻す。<kbd>Space</kbd> 再生　<kbd>←</kbd><kbd>→</kbd> 立体を切り替え</p>
+  <p>黒い線は紙の縁といま折る折り目、薄い線はマスの境目（この折り方では平ら）。ほかの立体の折り目は出していません。折り目の角度を一斉に動かしているので、途中で面が重なって見えることがあります。</p>
+</div>
+<div class="bar" id="bottom">
+  <div class="row">
+    <button class="play" id="play" aria-label="再生" aria-pressed="false"><svg class="go" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg><svg class="pause" viewBox="0 0 24 24"><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/></svg></button>
+    <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px">
+      <div style="display:flex;gap:8px;align-items:baseline"><span class="label" id="label">—</span><span id="state">0%</span></div>
+      <input type="range" id="t" min="0" max="1000" value="0" aria-label="折り進み">
+    </div>
+  </div>
+  <div class="row opts">
+    <label><input type="checkbox" id="loop" checked> 全部の立体を順に</label>
+    <label><input type="checkbox" id="colors" checked> 面に色</label>
+    <label class="sp">速さ <input type="range" id="speed" min="1" max="10" value="6" aria-label="速さ"></label>
+    <button class="ghost" id="helpBtn" aria-expanded="false" aria-controls="help">説明</button>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const DATA={"title": "面積 10：1×1×2 と 12 面体", "cells": [[0, 1], [1, 1], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [4, 1], [5, 1]], "panels": [{"poly": [[0.5, 1.0], [1.0, 1.0], [0.75, 1.5]]}, {"poly": [[0.0, 1.0], [0.5, 1.0], [0.75, 1.5], [0.5, 2.0], [0.0, 2.0]]}, {"poly": [[1.0, 1.0], [1.0, 2.0], [0.75, 1.5]]}, {"poly": [[1.0, 2.0], [0.5, 2.0], [0.75, 1.5]]}, {"poly": [[1.5, 1.5], [2.0, 2.0], [1.0, 2.0]]}, {"poly": [[1.0, 1.0], [1.5, 1.5], [1.0, 2.0]]}, {"poly": [[2.0, 1.0], [2.0, 2.0], [1.5, 1.5]]}, {"poly": [[1.0, 1.0], [2.0, 1.0], [1.5, 1.5]]}, {"poly": [[3.0, 0.0], [3.0, 1.0], [2.0, 1.0]]}, {"poly": [[2.0, 0.0], [3.0, 0.0], [2.0, 1.0]]}, {"poly": [[3.0, 1.5], [3.0, 2.0], [2.0, 2.0]]}, {"poly": [[2.0, 1.0], [3.0, 1.5], [2.0, 2.0]]}, {"poly": [[2.0, 1.0], [3.0, 1.0], [3.0, 1.5]]}, {"poly": [[2.0, 2.0], [3.0, 3.0], [2.0, 3.0]]}, {"poly": [[2.0, 2.0], [3.0, 2.0], [3.0, 3.0]]}, {"poly": [[3.0, 0.0], [4.0, 1.0], [3.0, 1.0]]}, {"poly": [[3.0, 0.0], [4.0, 0.0], [4.0, 1.0]]}, {"poly": [[4.0, 2.0], [3.0, 2.0], [3.0, 1.5]]}, {"poly": [[4.0, 1.0], [4.0, 2.0], [3.0, 1.5]]}, {"poly": [[3.0, 1.0], [4.0, 1.0], [3.0, 1.5]]}, {"poly": [[4.0, 2.0], [4.0, 3.0], [3.0, 3.0]]}, {"poly": [[3.0, 2.0], [4.0, 2.0], [3.0, 3.0]]}, {"poly": [[4.0, 1.0], [4.5, 1.5], [4.0, 2.0]]}, {"poly": [[4.5, 1.5], [5.0, 2.0], [4.0, 2.0]]}, {"poly": [[4.0, 1.0], [5.0, 1.0], [4.5, 1.5]]}, {"poly": [[5.0, 1.0], [5.0, 2.0], [4.5, 1.5]]}, {"poly": [[5.0, 1.0], [5.5, 1.0], [5.25, 1.5]]}, {"poly": [[5.0, 1.0], [5.25, 1.5], [5.0, 2.0]]}, {"poly": [[5.5, 1.0], [6.0, 1.0], [6.0, 2.0], [5.5, 2.0], [5.25, 1.5]]}, {"poly": [[5.5, 2.0], [5.0, 2.0], [5.25, 1.5]]}], "parent": [-1, 0, 0, 2, 5, 2, 7, 5, 12, 8, 11, 6, 11, 14, 10, 8, 15, 10, 19, 12, 21, 17, 18, 22, 22, 24, 27, 25, 26, 27], "hinge": [[[0, 0], [0, 0]], [[0.5, 1.0], [0.75, 1.5]], [[0.75, 1.5], [1.0, 1.0]], [[0.75, 1.5], [1.0, 2.0]], [[1.0, 2.0], [1.5, 1.5]], [[1.0, 1.0], [1.0, 2.0]], [[1.5, 1.5], [2.0, 1.0]], [[1.0, 1.0], [1.5, 1.5]], [[2.0, 1.0], [3.0, 1.0]], [[2.0, 1.0], [3.0, 0.0]], [[2.0, 2.0], [3.0, 1.5]], [[2.0, 1.0], [2.0, 2.0]], [[2.0, 1.0], [3.0, 1.5]], [[2.0, 2.0], [3.0, 3.0]], [[2.0, 2.0], [3.0, 2.0]], [[3.0, 0.0], [3.0, 1.0]], [[3.0, 0.0], [4.0, 1.0]], [[3.0, 1.5], [3.0, 2.0]], [[3.0, 1.5], [4.0, 1.0]], [[3.0, 1.0], [3.0, 1.5]], [[3.0, 3.0], [4.0, 2.0]], [[3.0, 2.0], [4.0, 2.0]], [[4.0, 1.0], [4.0, 2.0]], [[4.0, 2.0], [4.5, 1.5]], [[4.0, 1.0], [4.5, 1.5]], [[4.5, 1.5], [5.0, 1.0]], [[5.0, 1.0], [5.25, 1.5]], [[5.0, 1.0], [5.0, 2.0]], [[5.25, 1.5], [5.5, 1.0]], [[5.0, 2.0], [5.25, 1.5]]], "order": [0, 2, 1, 5, 3, 7, 4, 6, 11, 12, 10, 8, 19, 17, 14, 15, 9, 18, 21, 13, 16, 22, 20, 24, 23, 25, 27, 26, 29, 28], "targets": [{"label": "1×1×2", "theta": [0.0, 0.0, 0.0, 0.0, 0.0, 1.5707963267948966, 0.0, 0.0, 1.5707963267948966, 0.0, 0.0, 1.5707963267948966, 0.0, 0.0, -1.5707963267948966, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.5707963267948966, 1.5707963267948966, 0.0, 0.0, 0.0, 0.0, 1.5707963267948966, 0.0, 0.0], "colors": ["#f9c9c9", "#f9c9c9", "#f9c9c9", "#f9c9c9", "#c6dcf5", "#c6dcf5", "#c6dcf5", "#c6dcf5", "#cdebd0", "#cdebd0", "#fde2b3", "#fde2b3", "#fde2b3", "#fff5b0", "#fff5b0", "#cdebd0", "#cdebd0", "#fde2b3", "#fde2b3", "#fde2b3", "#fff5b0", "#fff5b0", "#e2cdf3", "#e2cdf3", "#e2cdf3", "#e2cdf3", "#f9c9c9", "#f9c9c9", "#f9c9c9", "#f9c9c9"], "target3d": [[[0.0, 2.0, 1.0], [0.0, 2.0, 0.0], [0.0, 1.0, 0.5]], [[0.0, 2.0, 2.0], [0.0, 2.0, 1.0], [0.0, 1.0, 0.5], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]], [[0.0, 2.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.5]], [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.5]], [[1.0, 1.0, 0.0], [2.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 2.0, 0.0], [1.0, 1.0, 0.0], [0.0, 0.0, 0.0]], [[2.0, 2.0, 0.0], [2.0, 0.0, 0.0], [1.0, 1.0, 0.0]], [[0.0, 2.0, 0.0], [2.0, 2.0, 0.0], [1.0, 1.0, 0.0]], [[0.0, 2.0, 2.0], [2.0, 2.0, 2.0], [2.0, 2.0, 0.0]], [[0.0, 2.0, 0.0], [0.0, 2.0, 2.0], [2.0, 2.0, 0.0]], [[2.0, 1.0, 2.0], [2.0, 0.0, 2.0], [2.0, 0.0, 0.0]], [[2.0, 2.0, 0.0], [2.0, 1.0, 2.0], [2.0, 0.0, 0.0]], [[2.0, 2.0, 0.0], [2.0, 2.0, 2.0], [2.0, 1.0, 2.0]], [[2.0, 0.0, 0.0], [0.0, 0.0, 2.0], [0.0, 0.0, 0.0]], [[2.0, 0.0, 0.0], [2.0, 0.0, 2.0], [0.0, 0.0, 2.0]], [[0.0, 2.0, 2.0], [2.0, 2.0, 4.0], [2.0, 2.0, 2.0]], [[0.0, 2.0, 2.0], [0.0, 2.0, 4.0], [2.0, 2.0, 4.0]], [[2.0, 0.0, 4.0], [2.0, 0.0, 2.0], [2.0, 1.0, 2.0]], [[2.0, 2.0, 4.0], [2.0, 0.0, 4.0], [2.0, 1.0, 2.0]], [[2.0, 2.0, 2.0], [2.0, 2.0, 4.0], [2.0, 1.0, 2.0]], [[2.0, 0.0, 4.0], [0.0, 0.0, 4.0], [0.0, 0.0, 2.0]], [[2.0, 0.0, 2.0], [2.0, 0.0, 4.0], [0.0, 0.0, 2.0]], [[2.0, 2.0, 4.0], [1.0, 1.0, 4.0], [2.0, 0.0, 4.0]], [[1.0, 1.0, 4.0], [0.0, 0.0, 4.0], [2.0, 0.0, 4.0]], [[2.0, 2.0, 4.0], [0.0, 2.0, 4.0], [1.0, 1.0, 4.0]], [[0.0, 2.0, 4.0], [0.0, 0.0, 4.0], [1.0, 1.0, 4.0]], [[0.0, 2.0, 4.0], [0.0, 2.0, 3.0], [0.0, 1.0, 3.5]], [[0.0, 2.0, 4.0], [0.0, 1.0, 3.5], [0.0, 0.0, 4.0]], [[0.0, 2.0, 3.0], [0.0, 2.0, 2.0], [0.0, 0.0, 2.0], [0.0, 0.0, 3.0], [0.0, 1.0, 3.5]], [[0.0, 0.0, 3.0], [0.0, 0.0, 4.0], [0.0, 1.0, 3.5]]]}, {"label": "12 面体（面 12・頂点 8・辺 18）（貼り合わせ 1）", "theta": [0.0, 0.0, -0.29884492927515666, 0.0, 0.0, 0.7769935279884186, 0.0, 0.7769935279884216, 0.7769935279884123, 0.7769935279884248, 0.0, 1.5827323643452582, 0.29884492927515627, -1.5827323643452602, -0.7769935279884187, 0.0, 1.5827323643452622, 0.0, 0.0, 0.0, -0.7769935279884186, -0.7769935279884187, 1.5827323643452589, 0.0, 0.7769935279884237, 0.0, 0.0, 0.7769935279884149, -0.29884492927515666, -0.29884492927515666], "colors": ["#f9c9c9", "#f9c9c9", "#fde2b3", "#fde2b3", "#fff5b0", "#fff5b0", "#cdebd0", "#cdebd0", "#c6dcf5", "#e2cdf3", "#f4a6a6", "#f4a6a6", "#f5c16c", "#fff5b0", "#d9e27a", "#c6dcf5", "#8fd1a0", "#f4a6a6", "#f5c16c", "#f5c16c", "#8dbbe8", "#d9e27a", "#c19be0", "#c19be0", "#8fd1a0", "#8fd1a0", "#f9c9c9", "#f9c9c9", "#fde2b3", "#fde2b3"], "target3d": [[[0.5, 1.0, 0.0], [1.0, 1.0, 0.0], [0.75, 1.5, 0.0]], [[0.0, 1.0, 0.0], [0.5, 1.0, 0.0], [0.75, 1.5, 0.0], [0.5, 2.0, 0.0], [0.0, 2.0, 0.0]], [[0.9999999999999999, 0.9999999999999998, 5.551115123125783e-17], [0.9822708793958665, 1.991135439697933, -0.13166707431012703], [0.75, 1.5, 0.0]], [[0.9822708793958665, 1.991135439697933, -0.13166707431012703], [0.49999999999999994, 1.9999999999999998, 2.7755575615628914e-17], [0.75, 1.5, 0.0]], [[1.2426895865279366, 1.4430886153163107, -0.4947466458380225], [1.4853791730558732, 1.8861772306326214, -0.9894932916760449], [0.9822708793958668, 1.9911354396979333, -0.13166707431012703]], [[1.0, 1.0, 0.0], [1.2426895865279366, 1.4430886153163107, -0.4947466458380225], [0.9822708793958668, 1.9911354396979333, -0.13166707431012703]], [[0.9999999999999974, 1.0119357541331742, -0.9999287663495198], [1.485379173055873, 1.8861772306326212, -0.9894932916760448], [1.2426895865279366, 1.4430886153163107, -0.4947466458380225]], [[0.9999999999999999, 0.9999999999999999, -1.1102230246251565e-16], [0.9999999999999974, 1.0119357541331742, -0.9999287663495198], [1.2426895865279366, 1.4430886153163107, -0.4947466458380225]], [[-3.1086244689504383e-15, 0.9999999999999981, -4.440892098500626e-16], [0.1434876441046833, 1.5059678770665883, -0.8505338343452393], [0.9999999999999971, 1.0119357541331744, -0.9999287663495195]], [[0.9999999999999964, 0.9999999999999998, 0.0], [-3.552713678800501e-15, 0.9999999999999982, -4.440892098500626e-16], [0.9999999999999969, 1.0119357541331744, -0.9999287663495195]], [[0.368448110028488, 1.934224055014245, -0.9769831713186289], [0.6111376965564257, 2.371344793263969, -0.9717654339818916], [1.485379173055873, 1.8861772306326214, -0.9894932916760452]], [[0.9999999999999976, 1.0119357541331744, -0.9999287663495199], [0.368448110028488, 1.934224055014245, -0.9769831713186289], [1.485379173055873, 1.8861772306326214, -0.9894932916760452]], [[0.9999999999999973, 1.0119357541331744, -0.9999287663495199], [0.14348764410468373, 1.5059678770665883, -0.8505338343452395], [0.368448110028488, 1.9342240550142453, -0.9769831713186288]], [[1.485379173055873, 1.8861772306326214, -0.9894932916760453], [0.9645417587917351, 2.982270879395868, -0.2633341486202544], [0.9822708793958665, 1.9911354396979344, -0.13166707431012736]], [[1.485379173055873, 1.8861772306326212, -0.9894932916760448], [0.6111376965564257, 2.3713447932639684, -0.9717654339818913], [0.9645417587917349, 2.9822708793958674, -0.26333414862025406]], [[-3.1086244689504383e-15, 0.9999999999999981, -4.440892098500626e-16], [-0.7130247117906303, 2.000000000000002, -0.7011389023409591], [0.1434876441046833, 1.5059678770665883, -0.8505338343452393]], [[-3.1086244689504383e-15, 0.9999999999999973, -6.106226635438361e-16], [3.3306690738754696e-16, 1.9999999999999973, 1.7763568394002505e-15], [-0.7130247117906303, 2.0000000000000018, -0.7011389023409593]], [[-0.26310377994302137, 2.8565123558953163, -0.9540375762877381], [0.6111376965564257, 2.371344793263969, -0.9717654339818916], [0.368448110028488, 1.934224055014245, -0.9769831713186289]], [[-0.7130247117906299, 2.000000000000002, -0.7011389023409593], [-0.26310377994302137, 2.8565123558953163, -0.9540375762877382], [0.368448110028488, 1.9342240550142453, -0.9769831713186288]], [[0.14348764410468373, 1.5059678770665883, -0.8505338343452395], [-0.7130247117906299, 2.000000000000002, -0.7011389023409593], [0.368448110028488, 1.9342240550142453, -0.9769831713186288]], [[-0.26310377994302137, 2.8565123558953163, -0.9540375762877378], [1.3322676295501878e-15, 3.0000000000000036, -2.220446049250313e-16], [0.9645417587917344, 2.982270879395868, -0.26333414862025384]], [[0.6111376965564257, 2.371344793263969, -0.9717654339818914], [-0.26310377994302137, 2.8565123558953163, -0.954037576287738], [0.9645417587917349, 2.982270879395868, -0.2633341486202544]], [[-0.7130247117906294, 2.000000000000002, -0.7011389023409595], [-0.3565123558953134, 2.5000000000000027, -0.35056945117048066], [-0.26310377994302114, 2.856512355895316, -0.9540375762877389]], [[-0.3565123558953134, 2.5000000000000027, -0.35056945117048066], [3.1086244689504383e-15, 3.000000000000003, -1.7763568394002505e-15], [-0.26310377994302114, 2.856512355895316, -0.9540375762877389]], [[-0.7130247117906299, 2.000000000000002, -0.70113890234096], [3.9968028886505635e-15, 2.0000000000000036, -1.7763568394002505e-15], [-0.3565123558953136, 2.5000000000000027, -0.35056945117048155]], [[3.9968028886505635e-15, 2.0000000000000036, -1.7763568394002505e-15], [3.1086244689504383e-15, 3.0000000000000036, -2.220446049250313e-15], [-0.3565123558953136, 2.5000000000000027, -0.35056945117048155]], [[4.440892098500626e-15, 2.0000000000000036, -1.9190594089969777e-15], [0.5000000000000044, 2.000000000000004, -2.5990205029565545e-15], [0.25000000000000355, 2.500000000000004, -2.433093071315206e-15]], [[4.440892098500626e-15, 2.0000000000000036, -1.9190594089969777e-15], [0.25000000000000355, 2.500000000000004, -2.433093071315206e-15], [2.6645352591003757e-15, 3.0000000000000036, -2.2671656396738566e-15]], [[0.5000000000000044, 2.0000000000000044, -2.6645352591003757e-15], [0.9822708793958705, 1.9911354396979382, -0.13166707431013025], [0.9645417587917358, 2.9822708793958714, -0.2633341486202576], [0.48227087939586966, 2.9911354396979375, -0.13166707431013003], [0.25000000000000444, 2.500000000000004, -2.220446049250313e-15]], [[0.48227087939586966, 2.991135439697938, -0.1316670743101298], [3.552713678800501e-15, 3.000000000000004, -2.220446049250313e-15], [0.25000000000000444, 2.5000000000000044, -2.220446049250313e-15]]]}, {"label": "12 面体（面 12・頂点 8・辺 18）（貼り合わせ 2）", "theta": [0.0, -0.2988449292751574, 0.0, -0.2988449292751574, -0.776993527988419, 0.7769935279884129, -0.776993527988419, 0.0, 0.77699352798841, 1.5827323643452722, -0.2988449292751646, 1.5827323643452609, 0.0, -0.7769935279884186, -0.7769935279884082, 0.0, 0.7769935279884133, 0.0, -0.2988449292751646, 0.0, -1.5827323643452764, -0.7769935279884082, 1.582732364345263, -0.7769935279884189, 0.0, -0.7769935279884189, 0.2988449292751574, 0.776993527988408, 0.0, 0.0], "colors": ["#f9c9c9", "#fde2b3", "#f9c9c9", "#fde2b3", "#fff5b0", "#cdebd0", "#fff5b0", "#cdebd0", "#c6dcf5", "#cdebd0", "#e2cdf3", "#f4a6a6", "#f4a6a6", "#f5c16c", "#d9e27a", "#c6dcf5", "#8fd1a0", "#e2cdf3", "#e2cdf3", "#f4a6a6", "#8dbbe8", "#d9e27a", "#c19be0", "#8dbbe8", "#c19be0", "#8dbbe8", "#f9c9c9", "#fde2b3", "#f9c9c9", "#fde2b3"], "target3d": [[[0.5, 1.0, 0.0], [1.0, 1.0, 0.0], [0.75, 1.5, 0.0]], [[0.017729120604133494, 0.9911354396979333, -0.1316670743101274], [0.5, 1.0, 0.0], [0.75, 1.5000000000000002, 0.0], [0.5177291206041335, 1.9911354396979333, -0.1316670743101274], [0.03545824120826699, 1.9822708793958665, -0.2633341486202548]], [[1.0, 1.0, 0.0], [1.0, 2.0, 0.0], [0.75, 1.5, 0.0]], [[1.0, 1.9999999999999998, 0.0], [0.5177291206041335, 1.991135439697933, -0.1316670743101274], [0.75, 1.5, 0.0]], [[1.356512355895317, 1.5, -0.3505694511704789], [1.2631037799430278, 1.856512355895315, -0.9540375762877362], [0.9999999999999998, 2.0, 0.0]], [[1.0, 1.0, 0.0], [1.3565123558953172, 1.5, -0.3505694511704789], [1.0, 2.0, 0.0]], [[1.7130247117906343, 1.0, -0.7011389023409578], [1.263103779943028, 1.856512355895315, -0.9540375762877362], [1.3565123558953172, 1.5, -0.3505694511704789]], [[1.0, 1.0, 0.0], [1.7130247117906343, 1.0, -0.7011389023409578], [1.3565123558953172, 1.5, -0.3505694511704789]], [[1.0000000000000044, -6.439293542825908e-15, -4.107825191113079e-15], [0.8565123558953198, 0.5059678770665874, -0.8505338343452414], [1.7130247117906339, 0.9999999999999998, -0.7011389023409578]], [[0.9999999999999973, 0.9999999999999933, -2.4424906541753444e-15], [1.0000000000000044, -6.661338147750939e-15, -4.107825191113079e-15], [1.713024711790634, 0.9999999999999996, -0.7011389023409575]], [[0.6315518899715173, 0.9342240550142451, -0.9769831713186302], [0.3888623034435805, 1.3713447932639693, -0.9717654339818889], [1.2631037799430287, 1.856512355895315, -0.954037576287736]], [[1.7130247117906343, 1.0, -0.7011389023409578], [0.6315518899715169, 0.9342240550142451, -0.9769831713186305], [1.263103779943028, 1.8565123558953152, -0.9540375762877361]], [[1.7130247117906343, 1.0, -0.7011389023409578], [0.8565123558953203, 0.5059678770665876, -0.8505338343452413], [0.6315518899715169, 0.9342240550142451, -0.9769831713186305]], [[1.2631037799430287, 1.856512355895315, -0.9540375762877363], [0.03545824120827179, 1.9822708793958705, -0.26333414862025406], [1.000000000000005, 2.000000000000005, 3.3306690738754696e-16]], [[1.263103779943029, 1.856512355895315, -0.9540375762877364], [0.38886230344358097, 1.371344793263969, -0.9717654339818895], [0.035458241208272234, 1.9822708793958703, -0.2633341486202545]], [[1.0000000000000044, -6.439293542825908e-15, -4.107825191113079e-15], [5.329070518200751e-15, 0.01193575413317527, -0.9999287663495251], [0.8565123558953198, 0.5059678770665874, -0.8505338343452414]], [[1.0000000000000044, -6.161737786669619e-15, -4.274358644806853e-15], [4.440892098500626e-15, -1.1546319456101628e-14, -5.551115123125783e-15], [5.329070518200751e-15, 0.01193575413317538, -0.9999287663495251]], [[-0.4853791730558674, 0.8861772306326234, -0.9894932916760417], [0.3888623034435805, 1.3713447932639693, -0.9717654339818889], [0.6315518899715173, 0.9342240550142451, -0.9769831713186302]], [[6.217248937900877e-15, 0.011935754133175491, -0.999928766349525], [-0.48537917305586786, 0.8861772306326234, -0.9894932916760422], [0.6315518899715173, 0.9342240550142449, -0.9769831713186305]], [[0.8565123558953203, 0.5059678770665876, -0.8505338343452413], [5.773159728050814e-15, 0.011935754133175491, -0.9999287663495249], [0.6315518899715169, 0.9342240550142451, -0.9769831713186305]], [[-0.48537917305586753, 0.8861772306326232, -0.9894932916760424], [0.01772912060414822, 0.9911354396979366, -0.13166707431013025], [0.035458241208272095, 1.9822708793958705, -0.2633341486202544]], [[0.3888623034435801, 1.3713447932639693, -0.9717654339818891], [-0.48537917305586786, 0.8861772306326234, -0.9894932916760419], [0.03545824120827179, 1.9822708793958705, -0.2633341486202541]], [[6.161737786669619e-15, 0.011935754133175491, -0.9999287663495249], [-0.24268958652792788, 0.4430886153163102, -0.4947466458380241], [-0.4853791730558679, 0.8861772306326234, -0.9894932916760419]], [[-0.2426895865279275, 0.4430886153163103, -0.49474664583802364], [0.017729120604145, 0.991135439697931, -0.13166707431012625], [-0.48537917305586786, 0.8861772306326234, -0.9894932916760415]], [[6.161737786669619e-15, 0.011935754133175491, -0.9999287663495249], [1.2129186544029835e-14, -2.9976021664879227e-15, -5.329070518200751e-15], [-0.24268958652792788, 0.4430886153163102, -0.4947466458380241]], [[1.2434497875801753e-14, -2.9976021664879227e-15, -4.440892098500626e-15], [0.017729120604145, 0.9911354396979309, -0.13166707431012625], [-0.24268958652792794, 0.4430886153163103, -0.49474664583802364]], [[1.3322676295501878e-14, -2.831068712794149e-15, -4.54454182619024e-15], [0.5000000000000133, -2.0816681711721685e-15, -2.9839412191146053e-15], [0.2500000000000133, 0.49999999999999745, -8.499060830113869e-16]], [[1.2434497875801753e-14, -2.761679773755077e-15, -4.440892098500626e-15], [0.25000000000001243, 0.49999999999999756, -8.881784197001252e-16], [0.017729120604145443, 0.9911354396979312, -0.13166707431012648]], [[0.5000000000000133, -2.0816681711721685e-15, -2.9839412191146053e-15], [1.0000000000000142, -1.3322676295501878e-15, -1.4233406120389702e-15], [1.0000000000000133, 0.9999999999999986, 4.405330267243102e-15], [0.5000000000000124, 0.9999999999999978, 2.8447296601674665e-15], [0.2500000000000133, 0.49999999999999745, -8.499060830113869e-16]], [[0.5000000000000115, 0.999999999999998, 2.4424906541753444e-15], [0.017729120604145443, 0.9911354396979312, -0.13166707431012648], [0.25000000000001243, 0.49999999999999756, -8.881784197001252e-16]]]}]};
+(function(){
+const T=window.THREE; const stage=document.getElementById('stage');
+const renderer=new T.WebGLRenderer({antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); stage.appendChild(renderer.domElement);
+const scene=new T.Scene(); const camera=new T.PerspectiveCamera(38,1,0.1,500);
+const group=new T.Group(); scene.add(group);
+// panels
+const panels=DATA.panels.map((p,i)=>{
+  const shape=new T.Shape(p.poly.map(v=>new T.Vector2(v[0],v[1])));
+  const geo=new T.ShapeGeometry(shape);
+  const mat=new T.MeshBasicMaterial({color:0xffffff,side:T.DoubleSide});   // flat colour, no lighting
+  const mesh=new T.Mesh(geo,mat); mesh.matrixAutoUpdate=false;
+  const mk=(color,op,lw)=>{ const l=new T.LineSegments(new T.BufferGeometry(),new T.LineBasicMaterial({color,transparent:true,opacity:op,linewidth:lw})); l.matrixAutoUpdate=false; group.add(l); return l; };
+  const edge={bnd:mk(0x1b2027,0.95,1),crease:mk(0x1b2027,0.95,1),flat:mk(0x1b2027,0.18,1)};   // boundary + crease = black, other lines faint
+  group.add(mesh); return {mesh,edge,poly:p.poly};
+});
+// ---- edge classification: boundary / crease (folded in the current target) / flat (coplanar in the current target)
+const EPS=1e-6;
+function onSeg(m,a,b){ const cr=(b[0]-a[0])*(m[1]-a[1])-(b[1]-a[1])*(m[0]-a[0]); if(Math.abs(cr)>1e-6) return false;
+  return Math.min(a[0],b[0])-1e-6<=m[0]&&m[0]<=Math.max(a[0],b[0])+1e-6&&Math.min(a[1],b[1])-1e-6<=m[1]&&m[1]<=Math.max(a[1],b[1])+1e-6; }
+const panelEdges=DATA.panels.map((p,i)=>{ const n=p.poly.length; return p.poly.map((v,k)=>({a:v,b:p.poly[(k+1)%n],partner:-1})); });
+for(let i=0;i<panelEdges.length;i++) for(const e of panelEdges[i]){ const m=[(e.a[0]+e.b[0])/2,(e.a[1]+e.b[1])/2];
+  outer: for(let j=0;j<panelEdges.length;j++){ if(j===i) continue; for(const f of panelEdges[j]){ if(onSeg(m,f.a,f.b)&&onSeg(e.a,f.a,f.b)&&onSeg(e.b,f.a,f.b)||onSeg(m,f.a,f.b)&&onSeg(f.a,e.a,e.b)&&onSeg(f.b,e.a,e.b)){ e.partner=j; break outer; } } } }
+function normalOf(poly3){ const [a,b,c]=[poly3[0],poly3[1],poly3[2]]; const u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]], v=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
+  const n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]]; const L=Math.hypot(...n)||1; return n.map(x=>x/L); }
+const isInt=x=>Math.abs(x-Math.round(x))<1e-6;
+function onGrid(e){ return (isInt(e.a[0])&&Math.abs(e.a[0]-e.b[0])<1e-6)||(isInt(e.a[1])&&Math.abs(e.a[1]-e.b[1])<1e-6); }   // マスの境目（整数の縦線・横線の上）
+function classifyEdges(ti){
+  const T3=DATA.targets[ti].target3d; const N=T3.map(normalOf);
+  panels.forEach((p,i)=>{ const sets={bnd:[],crease:[],flat:[]};
+    for(const e of panelEdges[i]){ let kind='bnd';
+      if(e.partner>=0){ const a=N[i],b=N[e.partner]; const dot=a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+        // coplanar iff normals parallel and the partner's centroid lies in this panel's plane
+        const c=T3[e.partner][0], p0=T3[i][0]; const d=(c[0]-p0[0])*a[0]+(c[1]-p0[1])*a[1]+(c[2]-p0[2])*a[2];
+        kind=(Math.abs(dot-1)<1e-6&&Math.abs(d)<1e-6)?'flat':'crease'; }
+      if(kind==='flat'&&!onGrid(e)) continue;   // 他の立体だけの折り目は描かない（マスの境目だけ薄く残す）
+      sets[kind].push(e.a[0],e.a[1],0,e.b[0],e.b[1],0); }
+    for(const k in sets){ p.edge[k].geometry.dispose(); const g=new T.BufferGeometry(); g.setAttribute('position',new T.Float32BufferAttribute(sets[k],3)); p.edge[k].geometry=g; }
+  });
+}
+// flat layout centre
+let cx=0,cy=0,n=0; DATA.cells.forEach(c=>{cx+=c[0]+0.5;cy+=c[1]+0.5;n++}); cx/=n; cy/=n;
+const ext=Math.max(...DATA.cells.map(c=>Math.max(Math.abs(c[0]+0.5-cx),Math.abs(c[1]+0.5-cy))))+1;
+// state
+let target=0, t=0, dir=1, playing=false, phase='fold';   // start flat and paused // fold -> hold -> unfold -> switch
+const speedEl=document.getElementById('speed'), loopEl=document.getElementById('loop'), tEl=document.getElementById('t'), stateEl=document.getElementById('state'), playBtn=document.getElementById('play');
+const chips=document.getElementById('chips');
+const labelEl=document.getElementById('label');
+function setPlaying(v){ playing=v; playBtn.setAttribute('aria-pressed',v); playBtn.setAttribute('aria-label',v?'一時停止':'再生'); }
+function pick(i){ setTarget(i); t=0; phase='fold'; setPlaying(false); tEl.value=0; chips.children[i].scrollIntoView({block:'nearest',inline:'nearest'}); }
+DATA.targets.forEach((tg,i)=>{ const b=document.createElement('button'); b.className='chip'; b.innerHTML='<span class="n">'+(i+1)+'</span>'; b.append(tg.label); b.setAttribute('aria-pressed',i===0); b.onclick=()=>pick(i); chips.appendChild(b); });
+const helpEl=document.getElementById('help'), helpBtn=document.getElementById('helpBtn');
+function showHelp(v){ helpEl.hidden=!v; helpBtn.setAttribute('aria-expanded',v); }
+helpBtn.onclick=()=>showHelp(helpEl.hidden);
+showHelp(innerWidth>640);
+const colorsEl=document.getElementById('colors'); const PLAIN='#f4f3ee';
+function applyColors(){ const cols=DATA.targets[target].colors; panels.forEach((p,k)=>p.mesh.material.color.set(colorsEl.checked?cols[k]:PLAIN)); }
+function setTarget(i){ target=i; [...chips.children].forEach((c,j)=>c.setAttribute('aria-pressed',j===i)); labelEl.textContent=DATA.targets[i].label; applyColors(); classifyEdges(i); }
+colorsEl.addEventListener('change',applyColors);
+setTarget(0);
+const M=DATA.panels.map(()=>new T.Matrix4()); const tmpA=new T.Matrix4(), tmpB=new T.Matrix4(), v0=new T.Vector3(), v1=new T.Vector3(), ax=new T.Vector3();
+function pose(tt){
+  const th=DATA.targets[target].theta;
+  M[0].identity();
+  for(const c of DATA.order){ if(c===0) continue; const p=DATA.parent[c]; const h=DATA.hinge[c];
+    v0.set(h[0][0],h[0][1],0).applyMatrix4(M[p]); v1.set(h[1][0],h[1][1],0).applyMatrix4(M[p]); ax.subVectors(v1,v0).normalize();
+    tmpA.makeRotationAxis(ax,tt*th[c]); tmpB.makeTranslation(v0.x,v0.y,v0.z); tmpA.premultiply(tmpB); tmpB.makeTranslation(-v0.x,-v0.y,-v0.z); tmpA.multiply(tmpB);
+    M[c].multiplyMatrices(tmpA,M[p]); }
+  // centre of mass of vertices
+  const cen=new T.Vector3(); let k=0; const vv=new T.Vector3();
+  panels.forEach((p,i)=>{ for(const v of p.poly){ vv.set(v[0],v[1],0).applyMatrix4(M[i]); cen.add(vv); k++; } }); cen.multiplyScalar(1/k);
+  const shift=new T.Matrix4().makeTranslation(-cen.x,-cen.y,-cen.z);
+  panels.forEach((p,i)=>{ p.mesh.matrix.multiplyMatrices(shift,M[i]); for(const k in p.edge) p.edge[k].matrix.copy(p.mesh.matrix); });
+}
+// camera & orbit
+const YAW0=0.6, PITCH0=0.55; let yaw=YAW0, pitch=PITCH0, dist=1; const fitDist=()=>ext*1.3/(Math.tan(camera.fov*Math.PI/360)*Math.min(1,camera.aspect)); function cam(){ camera.position.set(dist*Math.cos(pitch)*Math.sin(yaw),dist*Math.sin(pitch),dist*Math.cos(pitch)*Math.cos(yaw)); camera.lookAt(0,0,0); }
+// pointer handling: 1 finger/mouse = rotate, 2 fingers = pinch zoom (touch-action:none keeps the page from scrolling)
+const ptrs=new Map(); let pinch0=null;
+const el=renderer.domElement;
+el.addEventListener('pointerdown',e=>{ e.preventDefault(); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); try{ el.setPointerCapture(e.pointerId); }catch(_){} if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinch0={d:Math.hypot(a.x-b.x,a.y-b.y),dist}; } });
+el.addEventListener('pointermove',e=>{ if(!ptrs.has(e.pointerId)) return; e.preventDefault();
+  if(ptrs.size===1){ const p=ptrs.get(e.pointerId); yaw-=(e.clientX-p.x)*0.008; pitch=Math.max(-1.4,Math.min(1.4,pitch+(e.clientY-p.y)*0.008)); }
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2 && pinch0){ const [a,b]=[...ptrs.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); dist=Math.max(ext*0.8,Math.min(ext*12,pinch0.dist*pinch0.d/Math.max(d,1))); } });
+const release=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) pinch0=null; };
+el.addEventListener('dblclick',()=>{ yaw=YAW0; pitch=PITCH0; dist=fitDist(); });
+el.addEventListener('pointerup',release); el.addEventListener('pointercancel',release); el.addEventListener('lostpointercapture',release);
+['touchstart','touchmove'].forEach(t=>el.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+renderer.domElement.addEventListener('wheel',e=>{ e.preventDefault(); dist=Math.max(ext*0.8,Math.min(ext*12,dist*(1+e.deltaY*0.001))); },{passive:false});
+function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); dist=fitDist(); } addEventListener('resize',resize); resize();
+// controls
+// a finished one-shot run (or a fully folded paused sheet) replays from flat
+playBtn.onclick=()=>{ if(!playing&&(phase==='done'||t>=1&&phase==='fold')){ t=0; phase='fold'; } setPlaying(!playing); };
+tEl.addEventListener('input',()=>{ setPlaying(false); t=tEl.value/1000; phase='fold'; });
+addEventListener('keydown',e=>{ const n=DATA.targets.length, onCtl=/^(INPUT|BUTTON|A)$/.test(e.target.tagName);
+  if(e.key===' '&&!onCtl){ e.preventDefault(); playBtn.click(); }
+  else if(e.key==='ArrowRight'&&e.target.type!=='range'){ e.preventDefault(); pick((target+1)%n); }
+  else if(e.key==='ArrowLeft'&&e.target.type!=='range'){ e.preventDefault(); pick((target+n-1)%n); }
+  else if(e.key==='Escape') showHelp(false); });
+const ease=x=>x;   // linear: constant folding speed
+let hold=0, last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(playing){ const sp=speedEl.value*0.08;
+    if(phase==='fold'){ t+=sp*dt; if(t>=1){t=1; phase='hold'; hold=0;} }
+    else if(phase==='hold'){ hold+=dt; if(hold>1.2){ phase=loopEl.checked?'unfold':'done'; } }
+    else if(phase==='unfold'){ t-=sp*dt; if(t<=0){ t=0; phase='switch'; hold=0; } }
+    else if(phase==='switch'){ hold+=dt; if(hold>0.5){ setTarget((target+1)%DATA.targets.length); phase='fold'; } }
+    tEl.value=Math.round(t*1000);
+  }
+  pose(ease(t)); cam();
+  stateEl.textContent=Math.round(t*100)+'%';
+  renderer.render(scene,camera); requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
