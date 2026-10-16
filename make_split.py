@@ -105,5 +105,5 @@ def make(src, hit, out, title):
 
 WORK = os.path.join(ROOT, '分割展開図', 'work', 'n')
 if __name__ == '__main__':
-    for f, out in [('n4z_1x1x11.json', 'n4_1x1x11'), ('n5_1x1x17_e1.json', 'n5_1x1x17'), ('n6_1x1x21_r13.json', 'n6_1x1x21'), ('n4z_1x3x5.json', 'n4_1x3x5'), ('n5_2x2x7_e1.json', 'n5_2x2x7')]:
+    for f, out in [('n4z_1x1x11.json', 'n4_1x1x11'), ('n5_1x1x17_e1.json', 'n5_1x1x17'), ('n6_1x1x21_r13.json', 'n6_1x1x21'), ('n4z_1x3x5.json', 'n4_1x3x5'), ('n5_2x2x7_e1.json', 'n5_2x2x7'), ('hk7/n_3x4x6_s20.json', 'n7_3x4x6'), ('hk7/n_1x1x31_s1.json', 'n7_1x1x31')]:
         make(os.path.join(WORK, f), 0, out, out)
