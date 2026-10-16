@@ -116,7 +116,8 @@ def card(a):
     d=json.load(open(a['data'])); n=len(d['targets']); show=list(range(min(n,5)))
     thumbs='<div class="thumbs">'+f'<figure>{svg_net(d,96)}<figcaption>展開図</figcaption></figure>'+''.join(f'<figure>{svg_solid(d,i,96)}<figcaption>{html.escape(d["targets"][i]["label"])}</figcaption></figure>' for i in show)+(f'<figure class="more">+{n-5}</figure>' if n>5 else '')+'</div>'
     area=len(d['cells'])
-    return f'''<a class="card" href="{a['file']}.html"><h2><span class="area">面積 {area}</span>{html.escape(a['title'])}</h2><p class="sub">{html.escape(a['sub'])}</p>{thumbs}<p>{html.escape(a['note'])}</p>{('<p class="cite">出典：'+html.escape(a['cite'])+'</p>') if a.get('cite') else ''}</a>'''
+    area_txt=a.get('area_label') or f'面積 {area}'
+    return f'''<a class="card" href="{a['file']}.html"><h2><span class="area">{area_txt}</span>{html.escape(a['title'])}</h2><p class="sub">{html.escape(a['sub'])}</p>{thumbs}<p>{html.escape(a['note'])}</p>{('<p class="cite">出典：'+html.escape(a['cite'])+'</p>') if a.get('cite') else ''}</a>'''
 INTRO={'先行研究の例':'論文に掲載されている共通展開図・多重折りの例を，図から読み取って折り方を検証したもの。出典を各カードに示す。',
  '同じ箱の多重折り':'一枚の展開図が同じ箱に本質的に異なる複数の方法で折れる例。折り線の入れ替わりに注目。',
  '異なる箱の共通展開図':'一枚の展開図が形の違う複数の箱に折れる例。多重折りをもつものを選んだ。',
