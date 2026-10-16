@@ -15,5 +15,8 @@ GitHub Pages: https://sora3141.github.io/fold-viewer/
 2. `apps.json` に項目を追加
 3. `python3 build.py` を実行してコミット
 
+## 分割展開図
+`make_split.py` が `分割展開図/work/n/*.json` の hit から `data/data_split_*.json` を作る（`test_split.py` で検証）。目標 0 は全体を A に折る通常の形、目標 1 は部品ごとの森（target の `parent/hinge/order/roots/cut`，詳細は make_split.py の先頭）。
+
 ## データの検証
 `fold_export.py` は各立体について，ヒンジ木の角度をすべて目標値にしたときの 3D 位置が探索の面配置と一致することを（剛体変換を除いて）確認している。

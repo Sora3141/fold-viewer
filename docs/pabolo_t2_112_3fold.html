@@ -126,10 +126,10 @@ function normalOf(poly3){ const [a,b,c]=[poly3[0],poly3[1],poly3[2]]; const u=[b
 const isInt=x=>Math.abs(x-Math.round(x))<1e-6;
 function onGrid(e){ return (isInt(e.a[0])&&Math.abs(e.a[0]-e.b[0])<1e-6)||(isInt(e.a[1])&&Math.abs(e.a[1]-e.b[1])<1e-6); }   // マスの境目（整数の縦線・横線の上）
 function classifyEdges(ti){
-  const T3=DATA.targets[ti].target3d; const N=T3.map(normalOf);
+  const T3=DATA.targets[ti].target3d, cut=DATA.targets[ti].cut; const N=T3.map(normalOf);   // cut = パネルごとの部品番号（分割展開図）。部品の境目は紙の縁として濃く描く
   panels.forEach((p,i)=>{ const sets={bnd:[],crease:[],flat:[]};
     for(const e of panelEdges[i]){ let kind='bnd';
-      if(e.partner>=0){ const a=N[i],b=N[e.partner]; const dot=a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+      if(e.partner>=0&&!(cut&&cut[e.partner]!==cut[i])){ const a=N[i],b=N[e.partner]; const dot=a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
         // coplanar iff normals parallel and the partner's centroid lies in this panel's plane
         const c=T3[e.partner][0], p0=T3[i][0]; const d=(c[0]-p0[0])*a[0]+(c[1]-p0[1])*a[1]+(c[2]-p0[2])*a[2];
         kind=(Math.abs(dot-1)<1e-6&&Math.abs(d)<1e-6)?'flat':'crease'; }
@@ -160,9 +160,9 @@ colorsEl.addEventListener('change',applyColors);
 setTarget(0);
 const M=DATA.panels.map(()=>new T.Matrix4()); const tmpA=new T.Matrix4(), tmpB=new T.Matrix4(), v0=new T.Vector3(), v1=new T.Vector3(), ax=new T.Vector3();
 function pose(tt){
-  const th=DATA.targets[target].theta;
-  M[0].identity();
-  for(const c of DATA.order){ if(c===0) continue; const p=DATA.parent[c]; const h=DATA.hinge[c];
+  const tg=DATA.targets[target], th=tg.theta, par=tg.parent||DATA.parent, hin=tg.hinge||DATA.hinge;   // 目標が木を持つなら（部品ごとの森）それを使う
+  for(const c of (tg.order||DATA.order)){ const p=par[c]; const h=hin[c];
+    if(p<0){ const r=tg.roots&&tg.roots[c]; if(r) M[c].makeTranslation(r[0][0]+(r[1][0]-r[0][0])*tt,r[0][1]+(r[1][1]-r[0][1])*tt,r[0][2]+(r[1][2]-r[0][2])*tt); else M[c].identity(); continue; }
     v0.set(h[0][0],h[0][1],0).applyMatrix4(M[p]); v1.set(h[1][0],h[1][1],0).applyMatrix4(M[p]); ax.subVectors(v1,v0).normalize();
     tmpA.makeRotationAxis(ax,tt*th[c]); tmpB.makeTranslation(v0.x,v0.y,v0.z); tmpA.premultiply(tmpB); tmpB.makeTranslation(-v0.x,-v0.y,-v0.z); tmpA.multiply(tmpB);
     M[c].multiplyMatrices(tmpA,M[p]); }
