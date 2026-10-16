@@ -96,7 +96,7 @@ const DATA={"title": "面積 22：1×1×5 と，同じ等面四面体に 13 通�
 const T=window.THREE; const stage=document.getElementById('stage');
 const renderer=new T.WebGLRenderer({antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); stage.appendChild(renderer.domElement);
 const scene=new T.Scene(); const camera=new T.PerspectiveCamera(38,1,0.1,500);
-const group=new T.Group(); scene.add(group);
+const group=new T.Group(); scene.add(group); group.rotation.z=DATA.spin||0;   // 分割展開図: 長い方を画面の横に向ける
 // panels
 const panels=DATA.panels.map((p,i)=>{
   const shape=new T.Shape(p.poly.map(v=>new T.Vector2(v[0],v[1])));

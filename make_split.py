@@ -36,6 +36,30 @@ def verify(d):
             assert sorted(round(float(x), 6) for x in dims(P3)[0]) == sorted(float(x) for x in name.split('x')), (name, dims(P3)[0])
     assert all(t['cut'][i] == d['targets'][0]['cut'][i] for t in d['targets'] for i in range(len(t['cut'])))
 
+PHI0 = float(np.arctan(np.tan(0.55) * np.sin(0.6)))   # 初期の視点（template の PITCH0・YAW0）で画面の水平に見える、展開図の面内の向き
+def spin_of(cells):
+    """展開図の主軸（長い方）が初期の視点で画面の横に見えるように回す角（template の group.rotation.z）"""
+    c = np.array(cells, float) + .5; best = None
+    for deg in range(180):   # 外接する長方形の面積が最小になる向き（長い方を x に）
+        a = np.radians(deg); q = c @ np.array([[np.cos(a), -np.sin(a)], [np.sin(a), np.cos(a)]]); w, h = np.ptp(q, axis=0)
+        if best is None or w * h < best[0] - 1e-9: best = (w * h, a if w >= h else a + np.pi / 2)
+    return round(float((PHI0 - best[1] + np.pi / 2) % np.pi - np.pi / 2), 6)
+MARGIN = 0.25   # 折り切った箱どうしの最小の隙間
+def part_boxes(d):
+    """部品ごとの折り切った箱（根を動かさないとき）: root, size, ctr（箱の中心）, flat（平らなときの部品の重心 xy）。根パネルは平面 z=0 に残る"""
+    t = d['targets'][1]; out = []
+    for k in range(len(d['parts'])):
+        ids = [i for i in t['order'] if t['cut'][i] == k]; loc = {g: l for l, g in enumerate(ids)}
+        pa = {loc[g]: (loc[t['parent'][g]] if t['parent'][g] in loc else None) for g in ids}
+        sz, ctr = dims(fe.fold3d([d['panels'][g] for g in ids], pa, {loc[g]: t['hinge'][g] for g in ids}, [loc[g] for g in ids], {loc[g]: t['theta'][g] for g in ids}))
+        flat = np.mean([[d['panels'][i]['poly'][0][0] + .5, d['panels'][i]['poly'][0][1] + .5] for i in ids], axis=0)
+        out.append({'root': next(g for g in ids if t['parent'][g] < 0), 'size': sz, 'ctr': ctr, 'flat': flat})
+    return out
+def overlap(a, pa, b, pb):
+    """2 つの箱（xy の中心を pa, pb に置く）が MARGIN 以内に近ければ各軸のめり込み量、離れていれば None"""
+    ov = [(a['size'][i] + b['size'][i]) / 2 + MARGIN - abs((pa[i] if i < 2 else a['ctr'][2]) - (pb[i] if i < 2 else b['ctr'][2])) for i in range(3)]
+    return ov if min(ov) > 0 else None
+
 def make(src, hit, out, title):
     rec = json.load(open(src)); h = rec['hits'][hit]; A = rec['A']
     parts = sorted(h['parts'], key=lambda s: sorted(map(int, s.split('x'))))   # 小さい箱から
@@ -56,26 +80,26 @@ def make(src, hit, out, title):
         order += [g[l] for l in dp['order']]
         P3 = fe.fold3d(P, {l: (dp['parent'][l] if dp['parent'][l] >= 0 else None) for l in range(len(P))}, dp['hinge'], dp['order'], {l: t0['theta'][l] for l in range(len(P))})
         info.append((g[0], g, *dims(P3)))
-    # 平らなとき: 部品の重心を全体の重心から遠ざける（マスの間に隙間 0.12 以上できる最小の倍率）
-    cen = lambda ids: np.mean([[panels[i]['poly'][0][0] + .5, panels[i]['poly'][0][1] + .5] for i in ids], axis=0)
-    F = cen(range(n)); fc = [cen(i[1]) for i in info]
-    def gap(kk):
-        pos = [(np.array(corner(panels[i])) + kk * (fc[part_of[i]] - F), part_of[i]) for i in range(n)]
-        return min((max(abs(a[0] - b[0]), abs(a[1] - b[1])) for a, p in pos for b, q in pos if p != q), default=9)
-    kk = next((x / 20 for x in range(2, 100) if gap(x / 20) >= 1.12), 5.0); print('離す倍率', kk, '隙間', round(gap(kk), 3))
-    # 折り切ったとき: 箱を横一列（A の長い辺の向き）に重ならないよう並べる
-    ax = 0 if max(c[0] for c in cells) - min(c[0] for c in cells) >= max(c[1] for c in cells) - min(c[1] for c in cells) else 1
-    wid = [max(i[2][0], i[2][1]) for i in info]; mid = np.cumsum([0] + wid[:-1]) + np.arange(len(wid)) * 0.6 + np.array(wid) / 2
-    mid -= (mid[-1] + wid[-1] / 2) / 2; roots = {}
-    for k, (r, g, sz, ctr) in enumerate(info):
-        tgt = np.array([F[0], F[1], 0.0]); tgt[ax] += mid[k]; off1 = kk * (fc[k] - F)
-        roots[r] = [[round(float(off1[0]), 4), round(float(off1[1]), 4), 0.0], [round(float(x), 4) for x in tgt - ctr]]
+    # 平らなとき: 部品はその場（隙間 0。境目は濃い線）。折り切ったとき: 箱は部品の重心の真上に置き、重なるときだけ最小限ずらす
+    d0 = {'panels': panels, 'parts': parts, 'targets': [None, {'parent': parent, 'hinge': hinge, 'order': order, 'theta': theta, 'cut': part_of}]}
+    bx = part_boxes(d0); xy = [b['flat'].copy() for b in bx]
+    for _ in range(500):   # ponytail: 重なる組を浅い軸の方向へ半分ずつ押す素朴な反復。収束しなければ assert で気づく
+        moved = False
+        for i in range(len(bx)):
+            for j in range(i + 1, len(bx)):
+                ov = overlap(bx[i], xy[i], bx[j], xy[j])
+                if ov is not None:
+                    a = int(np.argmin(ov[:2])); sg = 1 if xy[i][a] >= xy[j][a] else -1
+                    xy[i][a] += sg * (ov[a] / 2 + 1e-3); xy[j][a] -= sg * (ov[a] / 2 + 1e-3); moved = True
+        if not moved: break
+    assert not moved
+    roots = {b['root']: [[0.0, 0.0, 0.0], [round(float(xy[k][0] - b['ctr'][0]), 4), round(float(xy[k][1] - b['ctr'][1]), 4), 0.0]] for k, b in enumerate(bx)}
     # 色: 部品の色相 × 面ごとの明るさ（A に折るときも同じ。切れ目が分かる）
     col = lambda k, f: '#%02x%02x%02x' % tuple(int(255 * v) for v in colorsys.hls_to_rgb((k * 0.381966 + 0.05) % 1, 0.9 - 0.045 * f, 0.62))
     colors = [col(part_of[i], face[i]) for i in range(n)]
     tA = dA['targets'][0]; tA['label'] = 'A（%s）に折る' % A.replace('x', '×'); tA['colors'] = colors; tA['cut'] = part_of
     tS = {'label': '分けて折る', 'theta': theta, 'colors': colors, 'cut': part_of, 'target3d': tar3, 'parent': parent, 'hinge': hinge, 'order': order, 'roots': roots}
-    d = {'title': title, 'cells': dA['cells'], 'panels': panels, 'parent': dA['parent'], 'hinge': dA['hinge'], 'order': dA['order'], 'targets': [tA, tS], 'A': A, 'parts': parts}
+    d = {'title': title, 'cells': dA['cells'], 'panels': panels, 'parent': dA['parent'], 'hinge': dA['hinge'], 'order': dA['order'], 'targets': [tA, tS], 'A': A, 'parts': parts, 'spin': spin_of(cells)}
     verify(d); json.dump(d, open(os.path.join(HERE, 'data', 'data_split_' + out + '.json'), 'w'))
     print('OK', out, A, parts, 'パネル', n)
 
