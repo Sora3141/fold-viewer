@@ -910,67 +910,23 @@
  {
   "file": "box106_sym0",
   "data": "data/data_box106_sym0.json",
-  "title": "面積106・simple-phaseでない 1",
+  "title": "面積106・simple-phaseでない",
   "heading": "simple-phase でない，三つの箱の展開図",
   "sub": "1×1×26，1×2×17，1×5×8 に折れる面積 106 の展開図（180° 回転対称）",
-  "note": "1×1×26 に折ったとき，両端の 1×1 の面のどちらかが 2 つ以上のマスと隣り合う（simple-phase net ではない）。Demaine ら（2026）の 40 個はすべて simple-phase なので，その外の 3 箱展開図。紙を 180° 回すと重なる形だけを全部調べて見つけた（2026-10-17）。",
+  "note": "1×1×26 に折ったとき，両端の 1×1 の面のどちらかが 2 つ以上のマスと隣り合う（simple-phase net ではない）。Demaine ら（2026）の 40 個はすべて simple-phase なので，その外の 3 箱展開図。紙を 180° 回すと重なる形だけを全部調べて見つけた 2 個のうちの 1 つ（2026-10-17）。",
   "category": "面積106の三箱：simple-phaseでない",
   "order": 106.1,
-  "cite": "E. D. Demaine ほか, “Polyomino Nets Covering Three Different Boxes of Area 106 and Related Results,” arXiv:2608.19910 (2026)"
- },
- {
-  "file": "box106_sym1",
-  "data": "data/data_box106_sym1.json",
-  "title": "面積106・simple-phaseでない 2",
-  "heading": "simple-phase でない，三つの箱の展開図",
-  "sub": "1×1×26，1×2×17，1×5×8 に折れる面積 106 の展開図（180° 回転対称）",
-  "note": "1×1×26 に折ったとき，両端の 1×1 の面のどちらかが 2 つ以上のマスと隣り合う（simple-phase net ではない）。Demaine ら（2026）の 40 個はすべて simple-phase なので，その外の 3 箱展開図。紙を 180° 回すと重なる形だけを全部調べて見つけた（2026-10-17）。",
-  "category": "面積106の三箱：simple-phaseでない",
-  "order": 106.2,
   "cite": "E. D. Demaine ほか, “Polyomino Nets Covering Three Different Boxes of Area 106 and Related Results,” arXiv:2608.19910 (2026)"
  },
  {
   "file": "box106_sp0",
   "data": "data/data_box106_sp0.json",
-  "title": "面積106・simple-phase 1",
+  "title": "面積106・simple-phase",
   "heading": "simple-phase の，三つの箱の展開図",
   "sub": "1×1×26，1×2×17，1×5×8 に折れる面積 106 の展開図（180° 回転対称）",
   "note": "Demaine ら（2026）の 40 個のうち回転対称な 4 個。1×1×26 に折ったとき，両端の 1×1 の面がそれぞれ 1 つのマスとだけ隣り合う（simple-phase net）。同じ対称の全数探索で 4 個とも見つけ直した。",
   "category": "面積106の三箱：simple-phase",
   "order": 106.1,
-  "cite": "E. D. Demaine ほか, “Polyomino Nets Covering Three Different Boxes of Area 106 and Related Results,” arXiv:2608.19910 (2026)"
- },
- {
-  "file": "box106_sp1",
-  "data": "data/data_box106_sp1.json",
-  "title": "面積106・simple-phase 2",
-  "heading": "simple-phase の，三つの箱の展開図",
-  "sub": "1×1×26，1×2×17，1×5×8 に折れる面積 106 の展開図（180° 回転対称）",
-  "note": "Demaine ら（2026）の 40 個のうち回転対称な 4 個。1×1×26 に折ったとき，両端の 1×1 の面がそれぞれ 1 つのマスとだけ隣り合う（simple-phase net）。同じ対称の全数探索で 4 個とも見つけ直した。",
-  "category": "面積106の三箱：simple-phase",
-  "order": 106.2,
-  "cite": "E. D. Demaine ほか, “Polyomino Nets Covering Three Different Boxes of Area 106 and Related Results,” arXiv:2608.19910 (2026)"
- },
- {
-  "file": "box106_sp2",
-  "data": "data/data_box106_sp2.json",
-  "title": "面積106・simple-phase 3",
-  "heading": "simple-phase の，三つの箱の展開図",
-  "sub": "1×1×26，1×2×17，1×5×8 に折れる面積 106 の展開図（180° 回転対称）",
-  "note": "Demaine ら（2026）の 40 個のうち回転対称な 4 個。1×1×26 に折ったとき，両端の 1×1 の面がそれぞれ 1 つのマスとだけ隣り合う（simple-phase net）。同じ対称の全数探索で 4 個とも見つけ直した。",
-  "category": "面積106の三箱：simple-phase",
-  "order": 106.3,
-  "cite": "E. D. Demaine ほか, “Polyomino Nets Covering Three Different Boxes of Area 106 and Related Results,” arXiv:2608.19910 (2026)"
- },
- {
-  "file": "box106_sp3",
-  "data": "data/data_box106_sp3.json",
-  "title": "面積106・simple-phase 4",
-  "heading": "simple-phase の，三つの箱の展開図",
-  "sub": "1×1×26，1×2×17，1×5×8 に折れる面積 106 の展開図（180° 回転対称）",
-  "note": "Demaine ら（2026）の 40 個のうち回転対称な 4 個。1×1×26 に折ったとき，両端の 1×1 の面がそれぞれ 1 つのマスとだけ隣り合う（simple-phase net）。同じ対称の全数探索で 4 個とも見つけ直した。",
-  "category": "面積106の三箱：simple-phase",
-  "order": 106.4,
   "cite": "E. D. Demaine ほか, “Polyomino Nets Covering Three Different Boxes of Area 106 and Related Results,” arXiv:2608.19910 (2026)"
  }
 ]
