@@ -85,3 +85,5 @@ if __name__ == '__main__':
          ['{F} 面体（頂点 {V}・辺 {E}）'] * 9)
     make(os.path.join(F, 'ex_11_creases.json'), os.path.join(D, 'data_multi_ico_11solids.json'), '正二十面体の辺展開図：4・5・6・8・9・10・11・12・14・16・20 面体',
          ['{F} 面体（頂点 {V}・辺 {E}）'] * 11)
+    make(os.path.join(F, 'ex_13_creases.json'), os.path.join(D, 'data_multi_tri22_13solids.json'), '正三角形 22 枚の展開図：4〜14・16・18 面体',
+         ['{F} 面体（頂点 {V}・辺 {E}）'] * 13)

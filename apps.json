@@ -928,5 +928,16 @@
   "category": "面積106の三箱：simple-phase",
   "order": 106.1,
   "cite": "E. D. Demaine ほか, “Polyomino Nets Covering Three Different Boxes of Area 106 and Related Results,” arXiv:2608.19910 (2026)"
+ },
+ {
+  "file": "multi_tri22_13solids",
+  "data": "data/data_multi_tri22_13solids.json",
+  "title": "4〜14・16・18面体に折れる（正三角形 22 枚の展開図）",
+  "heading": "一枚の展開図，13 種類の面数の立体に折れる",
+  "sub": "正三角形 22 枚の展開図が，面の数が 4・5・6・7・8・9・10・11・12・13・14・16・18 の 13 種類の凸多面体に折れる",
+  "note": "1 枚の紙（正三角形 22 枚）が 13 種類の面数の立体に折れる（正多面体ではない一般の凸多面体）。13・18 面は面積 20 では作れない面数。15・17・19・20 面は見つかっていない（調べたのは単純な格子デルタ面と D=2 の確認までで，ないとは言えない）。",
+  "category": "面の数の違う多面体",
+  "order": 41,
+  "area_label": "三角形 22 枚"
  }
 ]
