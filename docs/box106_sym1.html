@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>面積 106 の三箱（対称 2）</title>
+<title>面積106・simple-phaseでない 2</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
@@ -73,11 +73,11 @@ button.ghost:hover{border-color:var(--ink)}
 <body>
 <div id="stage"></div>
 <div class="bar" id="top">
-  <div class="title"><a class="home" href="./" aria-label="一覧へ戻る" title="一覧へ戻る">←</a><h1>180° 回転で重なる，三つの箱の展開図<small>1×1×26，1×2×17，1×5×8 に折れる面積 106 の展開図</small></h1></div>
+  <div class="title"><a class="home" href="./" aria-label="一覧へ戻る" title="一覧へ戻る">←</a><h1>simple-phase でない，三つの箱の展開図<small>1×1×26，1×2×17，1×5×8 に折れる面積 106 の展開図（180° 回転対称）　／　出典：E. D. Demaine ほか, “Polyomino Nets Covering Three Different Boxes of Area 106 and Related Results,” arXiv:2608.19910 (2026)</small></h1></div>
   <div class="chips" id="chips" role="group" aria-label="折る立体"></div>
 </div>
 <div class="help" id="help" hidden>
-  <p class="note">紙を 180° 回すと重なる形だけを探して見つけた（2026-10-17）。Demaine ら（2026）の 40 個（simple-phase の型）には入っていない。</p>
+  <p class="note">1×1×26 に折ったとき，両端の 1×1 の面のどちらかが 2 つ以上のマスと隣り合う（simple-phase net ではない）。Demaine ら（2026）の 40 個はすべて simple-phase なので，その外の 3 箱展開図。紙を 180° 回すと重なる形だけを全部調べて見つけた（2026-10-17）。</p>
   <p>ドラッグで回転、ホイール・ピンチで拡大、ダブルクリックで視点を戻す。<kbd>Space</kbd> 再生　<kbd>←</kbd><kbd>→</kbd> 立体を切り替え</p>
   <p>黒い線は紙の縁といま折る折り目、薄い線はマスの境目（この折り方では平ら）。ほかの立体の折り目は出していません。折り目の角度を一斉に動かしているので、途中で面が重なって見えることがあります。</p>
 </div>
