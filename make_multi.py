@@ -67,7 +67,7 @@ def make(src, out, title, labels):
         key = {}; cid = []
         for poly in P3:
             p0 = np.array(poly[0]); n = sum(np.cross(np.array(poly[i]) - p0, np.array(poly[(i + 1) % len(poly)]) - p0) for i in range(len(poly))); n /= np.linalg.norm(n)   # 折れ線が一直線の頂点があっても向きが取れる
-            cid.append(key.setdefault((*np.round(n, 3) + 0.0, round(float(n @ p0), 3) + 0.0), len(key)))
+            cid.append(key.setdefault((*np.round(n + 3e-4, 3) + 0.0, round(float(n @ p0) + 3e-4, 3) + 0.0), len(key)))   # 0.9375 など丸めの境目で割れないよう少しずらす
         assert len(key) == len(faces), (k, len(key), len(faces)); pal = palette(len(key))
         targets.append({'label': lab.format(F=k, V=len(X), E=len(edges)), 'theta': [th.get(i, 0.0) for i in range(len(panels))], 'colors': [pal[c] for c in cid], 'target3d': P3})
     cells = [list(c) for c in C['cells']] if kind == 'sq' else [[sum(z.real for z in V) / len(V) - .5, sum(z.imag for z in V) / len(V) - .5] for V in paper.V]
@@ -86,4 +86,6 @@ if __name__ == '__main__':
     make(os.path.join(F, 'ex_11_creases.json'), os.path.join(D, 'data_multi_ico_11solids.json'), '正二十面体の辺展開図：4・5・6・8・9・10・11・12・14・16・20 面体',
          ['{F} 面体（頂点 {V}・辺 {E}）'] * 11)
     make(os.path.join(F, 'ex_13_creases.json'), os.path.join(D, 'data_multi_tri22_13solids.json'), '正三角形 22 枚の展開図：4〜14・16・18 面体',
+         ['{F} 面体（頂点 {V}・辺 {E}）'] * 13)
+    make(os.path.join(F, 'ex_13b_creases.json'), os.path.join(D, 'data_multi_tri24_13solids.json'), '正三角形 24 枚の展開図：4〜14・16・17 面体',
          ['{F} 面体（頂点 {V}・辺 {E}）'] * 13)

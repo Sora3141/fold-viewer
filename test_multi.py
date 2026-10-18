@@ -14,9 +14,9 @@ import fold_export as fe, creases_multi as cm
 def area(poly): return abs(sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1] for i in range(len(poly)))) / 2
 def rk(p): return (round(p[0], 6) + 0.0, round(p[1], 6) + 0.0)
 
-for name in ('poly_a10', 'ico_5solids', 'ico_9solids', 'ico_11solids', 'tri22_13solids'):
+for name in ('poly_a10', 'ico_5solids', 'ico_9solids', 'ico_11solids', 'tri22_13solids', 'tri24_13solids'):
     d = json.load(open(os.path.join(ROOT, 'アプリ', 'data', f'data_multi_{name}.json')))
-    C = json.load(open(os.path.join(ROOT, '多面数', 'figures', {'poly_a10': 'ex1', 'ico_5solids': 'ex2', 'ico_9solids': 'ex2_9', 'ico_11solids': 'ex_11', 'tri22_13solids': 'ex_13'}[name] + '_creases.json'))); keys = list(C['gluings'])
+    C = json.load(open(os.path.join(ROOT, '多面数', 'figures', {'poly_a10': 'ex1', 'ico_5solids': 'ex2', 'ico_9solids': 'ex2_9', 'ico_11solids': 'ex_11', 'tri22_13solids': 'ex_13', 'tri24_13solids': 'ex_13b'}[name] + '_creases.json'))); keys = list(C['gluings'])
     tot = sum(area(p['poly']) for p in d['panels']); assert abs(tot - (len(C['cells']) if C['kind'] == 'sq' else len(C['cells']) * 3 ** .5 / 4)) < 1e-9, tot
     assert len(d['targets']) == len(keys); worst = 0
     for t, k in zip(d['targets'], keys):
