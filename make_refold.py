@@ -130,3 +130,47 @@ if __name__ == '__main__':
     S = json.load(open(SRC)); D = os.path.join(HERE, 'data')
     make(S['cube'], os.path.join(D, 'data_refold_cube_X.json'), '立方体の辺展開図 → 等面四面体 X*', '立方体', math.pi / 2, 6)
     make(S['ico'], os.path.join(D, 'data_refold_ico_X.json'), '正二十面体の辺展開図 → 等面四面体 X*', '正二十面体', math.pi - math.acos(-math.sqrt(5) / 3), 20)
+
+def chain(fa, fb, out):
+    """2 つのデータ（紙 A: 立方体と X*、紙 B: 正二十面体と X*）をつなぐ。紙 B を面積がそろうよう縮め、
+    B の X* を A の X* にぴったり重ねる相似変換（鏡映もありうる）align を求め、B の X* の面の色を A にそろえる。"""
+    A, B = json.load(open(fa)), json.load(open(fb))
+    def area(d): return sum(abs(sum(cr(p['poly'][i], p['poly'][(i + 1) % len(p['poly'])]) for i in range(len(p['poly'])))) / 2 for p in d['panels'])
+    def tetra(d):
+        P3 = d['targets'][1]['target3d']; X = np.array([v for p in P3 for v in p])
+        planes = []
+        for poly in P3:
+            p0 = np.array(poly[0]); n = sum(np.cross(np.array(poly[i]) - p0, np.array(poly[(i + 1) % len(poly)]) - p0) for i in range(len(poly))); n /= np.linalg.norm(n)
+            if all(np.abs(np.array([*n, n @ p0]) - k).max() > 1e-6 for k in planes): planes.append(np.array([*n, n @ p0]))
+        V = []
+        for v in X:
+            if sum(abs(v @ q[:3] - q[3]) < 1e-7 for q in planes) >= 3 and all(np.linalg.norm(v - u) > 1e-7 for u in V): V.append(v)
+        return np.array(V)
+    VA, VB = tetra(A), tetra(B); assert len(VA) == len(VB) == 4
+    s = math.sqrt(area(A) / area(B))
+    best = None
+    import itertools
+    for perm in itertools.permutations(range(4)):
+        P, Q = VB[list(perm)] * s, VA; pc, qc = P.mean(0), Q.mean(0)
+        U, S_, Wt = np.linalg.svd((P - pc).T @ (Q - qc)); R = (U @ Wt).T          # R (P - pc) ≈ Q - qc（鏡映も許す）
+        err = np.abs((R @ (P - pc).T).T - (Q - qc)).max()
+        if best is None or err < best[0]: best = (err, R, pc, qc, perm)
+    err, R, pc, qc, perm = best; assert err < 1e-6, err
+    Mx = np.eye(4); Mx[:3, :3] = R * s; Mx[:3, 3] = qc - R @ pc                   # world = R (s x) + (qc − R pc)
+    # B の X* の色を、重ねた位置で同じ平面にある A の面の色に
+    def planes_cols(P3, cols, M):
+        out = []
+        for poly, c in zip(P3, cols):
+            X = np.array([(M @ np.array([*v, 1]))[:3] for v in poly]); n = np.cross(X[1] - X[0], X[2] - X[0]); n /= np.linalg.norm(n); out.append((n, n @ X[0], c))
+        return out
+    pa = planes_cols(A['targets'][1]['target3d'], A['targets'][1]['colors'], np.eye(4))
+    newc = []
+    for n, o, _ in planes_cols(B['targets'][1]['target3d'], B['targets'][1]['colors'], Mx):
+        c = next(c for m, p, c in pa if (np.abs(m - n).max() < 1e-6 and abs(p - o) < 1e-6) or (np.abs(m + n).max() < 1e-6 and abs(p + o) < 1e-6)); newc.append(c)
+    B['targets'][1]['colors'] = newc
+    A['chain'] = {'net': B, 'align': Mx.T.flatten().tolist(), 'mirror': bool(np.linalg.det(R) < 0), 'scale': s}   # three.js の Matrix4.fromArray は列優先
+    json.dump(A, open(out, 'w')); print(out, '縮尺', round(s, 6), '鏡映' if np.linalg.det(R) < 0 else '鏡映なし', '重ねの誤差', err)
+
+if __name__ == '__main__':
+    D = os.path.join(HERE, 'data')
+    chain(os.path.join(D, 'data_refold_cube_X.json'), os.path.join(D, 'data_refold_ico_X.json'), os.path.join(D, 'data_refold_cube_ico.json'))

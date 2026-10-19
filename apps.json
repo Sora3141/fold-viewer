@@ -973,5 +973,17 @@
   "order": 2,
   "area_label": "三角形 20 枚",
   "cite": "下敷き: Demaine, Demaine, Diomidova, Kamata, Uehara, Zhang, arXiv 2109.03997"
+ },
+ {
+  "file": "refold_cube_ico",
+  "data": "data/data_refold_cube_ico.json",
+  "template": "template_chain.html",
+  "title": "立方体→X*→正二十面体（2手の再折り）",
+  "heading": "立方体から正二十面体へ，2 手の再折り",
+  "sub": "立方体を辺展開図 A に開いて等面四面体 X* に折り，X* を別の切り方で開いた紙 B を正二十面体に折る",
+  "note": "立方体の辺展開図（紙 A）と正二十面体の辺展開図（紙 B）は同じ等面四面体 X*（辺の比 1 : 1.3873 : 1.4692）に折れるので，立方体 → X* → 正二十面体 が 2 手でつながる。論文（Demaine ほか 2021）では，形の違う等面四面体 2 つを経由する 3 手だった。紙 B は面積をそろえるため 0.832 倍にし，X* がぴったり重なるよう鏡に映して置いた（鏡像も正二十面体の辺展開図）。",
+  "category": "再折り（正多面体）",
+  "order": 0,
+  "cite": "下敷き: Demaine, Demaine, Diomidova, Kamata, Uehara, Zhang, arXiv 2109.03997"
  }
 ]

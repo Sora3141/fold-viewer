@@ -100,11 +100,12 @@ def svg_net(d,size=110):
     out.append(f'<path d="{"".join(grid)}" stroke="#2a2f36" stroke-opacity="0.35" stroke-width="0.5" fill="none"/>')
     out.append(f'<path d="{"".join(seg)}" stroke="#2a2f36" stroke-width="0.8" fill="none" stroke-linecap="round"/>')
     out.append('</svg>'); return ''.join(out)
-apps=json.load(open('apps.json')); tpl=open('template.html').read()
+apps=json.load(open('apps.json')); TPL={}
 HEAD='<!doctype html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
 for a in apps:
     d=json.load(open(a['data']))
     sub=a['sub']+(('　／　出典：'+a['cite']) if a.get('cite') else '')
+    tpl=TPL.setdefault(a.get('template','template.html'),open(a.get('template','template.html')).read())
     body=tpl.replace('__TITLE__',a['title']).replace('__HEADING__',a['heading']).replace('__SUB__',sub).replace('__NOTE__',html.escape(a['note'])).replace('/*DATA*/null',json.dumps(d,ensure_ascii=False))
     open(a['file']+'.html','w').write(body.replace('__HOME__',''))   # artifact: no gallery to go back to
     body=body.replace('__HOME__','<a class="home" href="./" aria-label="一覧へ戻る" title="一覧へ戻る">←</a>')
