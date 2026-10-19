@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""data/data_refold_*.json を全ヒンジ目標角で折ったとき，正多面体（面・頂点の数，辺 1）と等面四面体 X*（4 面・4 頂点・辺の比）に閉じるかを確かめる。
-2 つの X* の辺の比が同じ（相似）ことも確かめる。usage: python3 test_refold.py   （研究リポジトリの中で実行）"""
+"""data/data_refold_*.json を全ヒンジ目標角で折ったとき，正多面体（面・頂点の数，辺 1）と等面四面体（4 面・4 頂点）に閉じるかを確かめる。
+同じ名前の四面体（X* など）が 2 枚の紙で相似なことも確かめる。usage: python3 test_refold.py   （研究リポジトリの中で実行）"""
 import os, json, glob
 import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -18,13 +18,14 @@ def shape(d, t):
     D = sorted(np.linalg.norm(V[i] - V[j]) for i in range(len(V)) for j in range(i + 1, len(V)))
     return len(planes), len(V), D
 
-ratios = []
-for f in sorted(glob.glob(os.path.join(HERE, 'data', 'data_refold_*.json'))):
-    d = json.load(open(f)); want = {'立方体': (6, 8), '正二十面体': (20, 12), '等面四面体 X*': (4, 4)}
+ratios = {}
+for f in sorted(glob.glob(os.path.join(HERE, 'data', 'data_refold_*_X*.json'))):   # 1 枚の紙のデータ（つないだものは除く）
+    d = json.load(open(f)); want = {'立方体': (6, 8), '正二十面体': (20, 12), '正八面体': (8, 6)}
     for t in d['targets']:
-        F, V, D = shape(d, t); assert (F, V) == want[t['label']], (f, t['label'], F, V)
-        if V == 4: ratios.append(np.array(D[::2]) / D[0])
+        F, V, D = shape(d, t); assert (F, V) == want.get(t['label'], (4, 4)), (f, t['label'], F, V)
+        if V == 4: ratios.setdefault(t['label'], []).append(np.array(D[::2]) / D[0])
         else: assert abs(D[0] - 1) < 1e-6, (f, t['label'], D[0])
         print(os.path.basename(f), t['label'], F, '面', V, '頂点', 'OK')
-assert all(np.abs(r - ratios[0]).max() < 1e-6 for r in ratios), ratios
-print('X* の辺の比', np.round(ratios[0], 6), '（全部一致）')
+for lab, rs in ratios.items():
+    assert len(rs) == 2 and np.abs(rs[0] - rs[1]).max() < 1e-6, (lab, rs)   # 2 枚の紙の四面体が相似
+    print(lab, '辺の比', np.round(rs[0], 6), '（2 枚で一致）')
