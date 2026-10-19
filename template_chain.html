@@ -73,14 +73,14 @@ button.ghost:hover{border-color:var(--ink)}
 <div class="help" id="help" hidden>
   <p class="note">__NOTE__</p>
   <p>ドラッグで回転、ホイール・ピンチで拡大、ダブルクリックで視点を戻す。<kbd>Space</kbd> 再生　<kbd>←</kbd><kbd>→</kbd> 段階を移る</p>
-  <p>黒い線は紙の縁といま折る折り目、薄い線はもう一方の立体の折り目。紙 B は面積を紙 A にそろえて大きさを変え、等面四面体がぴったり重なるよう置いている（必要なら鏡に映す）。真ん中（等面四面体）で紙を A から B に持ち替える。</p>
+  <p>黒い線は紙の縁といま折る折り目、薄い線はもう一方の立体の折り目。紙は面積をそろえて大きさを変え、共有する立体がぴったり重なるよう置いている（必要なら鏡に映す）。等面四面体のところで別の紙に持ち替え、正多面体のところでは同じ紙のまま折り目を替える。</p>
 </div>
 <div class="bar" id="bottom">
   <div class="row">
     <button class="play" id="play" aria-label="再生" aria-pressed="false"><svg class="go" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg><svg class="pause" viewBox="0 0 24 24"><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/></svg></button>
     <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px">
       <div style="display:flex;gap:8px;align-items:baseline"><span class="label" id="label">—</span><span id="state">0%</span></div>
-      <input type="range" id="t" min="0" max="4000" value="0" aria-label="再折りの進み">
+      <input type="range" id="t" min="0" value="0" aria-label="再折りの進み">
     </div>
   </div>
   <div class="row opts">
@@ -98,9 +98,13 @@ const T=window.THREE; const stage=document.getElementById('stage');
 const renderer=new T.WebGLRenderer({antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); stage.appendChild(renderer.domElement);
 const scene=new T.Scene(); const camera=new T.PerspectiveCamera(38,1,0.1,500);
 // 段階: [紙, 立体, 向き]。向き +1 は折る（0→1）、-1 は開く（1→0）
-const X=DATA.chain.xname||'X*', NETS=[DATA,DATA.chain.net], SOLID=[DATA.targets[0].label,DATA.chain.net.targets[0].label];
-const STEPS=[[0,0,-1,SOLID[0]+'を開いて紙 A に'],[0,1,1,'紙 A を等面四面体 '+X+' に'],[1,1,-1,X+' を開いて紙 B に'],[1,0,1,'紙 B を'+SOLID[1]+'に']];
-const ALIGN=[new T.Matrix4(),new T.Matrix4().fromArray(DATA.chain.align)];
+// 紙を順につなぐ。紙 n は立体 order[n][0] から開いて order[n][1] に折る（0 = 正多面体、1 = 等面四面体）。align は紙ごとの置き方（相似変換）
+const C=DATA.chain, NETS=[DATA,...C.nets], ALIGN=C.align.map(a=>new T.Matrix4().fromArray(a));
+const nm=(n,ti)=>NETS[n].targets[ti].label.replace('等面四面体 ','');
+const PAPER=[]; C.order.forEach(([o],n)=>PAPER.push(n===0?0:(o===0?PAPER[n-1]:PAPER[n-1]+1)));   // 正多面体を共有するなら同じ紙
+const PL=n=>'紙 '+String.fromCharCode(65+PAPER[n]);
+const STEPS=[]; C.order.forEach(([o,f],n)=>{ STEPS.push([n,o,-1,nm(n,o)+' を開いて '+PL(n)+' に',nm(n,o)+' を開く']); STEPS.push([n,f,1,PL(n)+' を'+(f===1?'等面四面体 ':'')+nm(n,f)+' に',nm(n,f)+' に折る']); });
+const NS=STEPS.length;
 function onSeg(m,a,b){ const cr=(b[0]-a[0])*(m[1]-a[1])-(b[1]-a[1])*(m[0]-a[0]); if(Math.abs(cr)>1e-6) return false;
   return Math.min(a[0],b[0])-1e-6<=m[0]&&m[0]<=Math.max(a[0],b[0])+1e-6&&Math.min(a[1],b[1])-1e-6<=m[1]&&m[1]<=Math.max(a[1],b[1])+1e-6; }
 function normalOf(p){ const [a,b,c]=p; const u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]], v=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
@@ -145,25 +149,26 @@ function pose(sh,ti,tt){   // 紙 sh を立体 ti へ tt だけ折る。ALIGN �
 function place(sh,cen){ const shift=new T.Matrix4().makeTranslation(-cen.x,-cen.y,-cen.z).multiply(ALIGN[sh.s]);
   sh.panels.forEach((p,i)=>{ p.mesh.matrix.multiplyMatrices(shift,sh.M[i]); for(const k in p.edge) p.edge[k].matrix.copy(p.mesh.matrix); }); }
 // 中心は等面四面体（2 枚で同じ面）の面積重心に固定。開いた紙はその周りに置く
-const CEN=pose(sheets[0],1,1);
+const CEN=pose(sheets[0],C.order[0][1],1);
 let ext=0; for(const sh of sheets){ pose(sh,0,0); const vv=new T.Vector3(); sh.panels.forEach((p,i)=>{ for(const v of p.poly){ vv.set(v[0],v[1],0).applyMatrix4(sh.M[i]).applyMatrix4(ALIGN[sh.s]).sub(CEN); ext=Math.max(ext,vv.length()); } }); }
 ext=ext*0.8+0.5;
 const colorsEl=document.getElementById('colors'); const PLAIN='#f4f3ee';
 let step=-1, s=0, dir=1, playing=false, hold=0;
 function applyColors(){ const [n,ti]=STEPS[step]; const sh=sheets[n], cols=sh.D.targets[ti].colors; sh.panels.forEach((p,k)=>p.mesh.material.color.set(colorsEl.checked?cols[k]:PLAIN)); }
 colorsEl.addEventListener('change',applyColors);
+document.getElementById('t').max=NS*1000;
 const chips=document.getElementById('chips'), labelEl=document.getElementById('label'), stateEl=document.getElementById('state'), tEl=document.getElementById('t'), playBtn=document.getElementById('play'), speedEl=document.getElementById('speed'), loopEl=document.getElementById('loop');
-[SOLID[0]+'を開く',X+' に折る',X+' を開く',SOLID[1]+'に折る'].forEach((txt,i)=>{ const b=document.createElement('button'); b.className='chip'; b.innerHTML='<span class="n">'+(i+1)+'</span>'; b.append(txt); b.setAttribute('aria-pressed','false'); b.onclick=()=>{ setPlaying(false); s=i; tEl.value=s*1000; }; chips.appendChild(b); });
+STEPS.map(st=>st[4]).forEach((txt,i)=>{ const b=document.createElement('button'); b.className='chip'; b.innerHTML='<span class="n">'+(i+1)+'</span>'; b.append(txt); b.setAttribute('aria-pressed','false'); b.onclick=()=>{ setPlaying(false); s=i; tEl.value=s*1000; }; chips.appendChild(b); });
 function setStep(i){ if(i===step) return; step=i; const [n,ti]=STEPS[i]; sheets.forEach((sh,k)=>sh.group.visible=k===n); classify(sheets[n],ti); applyColors();
-  [...chips.children].forEach((c,j)=>c.setAttribute('aria-pressed',j===i)); labelEl.textContent=(i+1)+'/4　'+STEPS[i][3]; }
+  [...chips.children].forEach((c,j)=>c.setAttribute('aria-pressed',j===i)); labelEl.textContent=(i+1)+'/'+NS+'　'+STEPS[i][3]; }
 function setPlaying(v){ playing=v; playBtn.setAttribute('aria-pressed',v); playBtn.setAttribute('aria-label',v?'一時停止':'再生'); }
-playBtn.onclick=()=>{ if(!playing&&!loopEl.checked&&(s>=4&&dir>0||s<=0&&dir<0)) dir=-dir; setPlaying(!playing); };
+playBtn.onclick=()=>{ if(!playing&&!loopEl.checked&&(s>=NS&&dir>0||s<=0&&dir<0)) dir=-dir; setPlaying(!playing); };
 tEl.addEventListener('input',()=>{ setPlaying(false); s=tEl.value/1000; });
 const helpEl=document.getElementById('help'), helpBtn=document.getElementById('helpBtn');
 function showHelp(v){ helpEl.hidden=!v; helpBtn.setAttribute('aria-expanded',v); } helpBtn.onclick=()=>showHelp(helpEl.hidden); showHelp(innerWidth>640);
 addEventListener('keydown',e=>{ const onCtl=/^(INPUT|BUTTON|A)$/.test(e.target.tagName);
   if(e.key===' '&&!onCtl){ e.preventDefault(); playBtn.click(); }
-  else if(e.key==='ArrowRight'&&e.target.type!=='range'){ e.preventDefault(); setPlaying(false); s=Math.min(4,Math.floor(s+1e-9)+1); tEl.value=s*1000; }
+  else if(e.key==='ArrowRight'&&e.target.type!=='range'){ e.preventDefault(); setPlaying(false); s=Math.min(NS,Math.floor(s+1e-9)+1); tEl.value=s*1000; }
   else if(e.key==='ArrowLeft'&&e.target.type!=='range'){ e.preventDefault(); setPlaying(false); s=Math.max(0,Math.ceil(s-1e-9)-1); tEl.value=s*1000; }
   else if(e.key==='Escape') showHelp(false); });
 // 視点
@@ -187,16 +192,16 @@ function frame(now){
   const dt=Math.min(0.05,(now-last)/1000); last=now;
   if(playing){
     if(hold>0) hold-=dt;
-    else { const prev=s; s=Math.max(0,Math.min(4,s+dir*speedEl.value*0.08*dt));
-      if(Math.floor(prev+1e-9)!==Math.floor(s+1e-9)||s===4||s===0) hold=0.7;          // 段階の境目で少し止める
-      if(s>=4&&dir>0||s<=0&&dir<0){ hold=1.4; if(loopEl.checked) dir=-dir; else setPlaying(false); } }
+    else { const prev=s; s=Math.max(0,Math.min(NS,s+dir*speedEl.value*0.08*dt));
+      if(Math.floor(prev+1e-9)!==Math.floor(s+1e-9)||s===NS||s===0) hold=0.7;          // 段階の境目で少し止める
+      if(s>=NS&&dir>0||s<=0&&dir<0){ hold=1.4; if(loopEl.checked) dir=-dir; else setPlaying(false); } }
     tEl.value=Math.round(s*1000); }
   // 段階 i の中の進み u（0..1）→ 折り具合 tt
-  const i=Math.min(3,Math.floor(s));   // 境目（s が整数）では前後の段階が同じ形になる（X* では紙 A と紙 B が重なる）
+  const i=Math.min(NS-1,Math.floor(s));   // 境目（s が整数）では前後の段階が同じ形になる（X* では紙 A と紙 B が重なる）
   const u=Math.max(0,Math.min(1,s-i)); setStep(i);
   const [n,ti,d]=STEPS[i], tt=d>0?u:1-u, sh=sheets[n];
   pose(sh,ti,tt); place(sh,CEN); cam();
-  stateEl.textContent=Math.round(s/4*100)+'%';
+  stateEl.textContent=Math.round(s/NS*100)+'%';
   renderer.render(scene,camera); requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

@@ -136,42 +136,82 @@ def make(net, out, title, solid, th_solid, nfaces, xname='X*'):
             'hinge': [hinge.get(i, [[0, 0], [0, 0]]) for i in range(len(panels))], 'order': order, 'targets': targets}
     json.dump(data, open(out, 'w')); print(out, len(cells), 'cells', len(panels), 'panels', [t['label'] for t in targets])
 
-def chain(fa, fb, out, xname='X*'):
-    """2 つのデータ（紙 A と紙 B。どちらも目標 1 が同じ等面四面体）をつなぐ。紙 B を面積がそろうよう拡大・縮小し、
-    B の四面体を A の四面体にぴったり重ねる相似変換（鏡映もありうる）align を求め、B の四面体の面の色を A にそろえる。"""
+def _planes(P3, M=np.eye(4)):
+    out = []
+    for poly in P3:
+        X = np.array([(M @ np.array([*v, 1]))[:3] for v in poly]); n = sum(np.cross(X[k] - X[0], X[(k + 1) % len(X)] - X[0]) for k in range(len(X))); n /= np.linalg.norm(n); out.append((n, n @ X[0]))
+    return out
+
+def _corners(d, ti):
+    """立体 ti に折った形の頂点（3 つ以上の面の平面に乗る点）"""
+    P3 = d['targets'][ti]['target3d']; pl = []
+    for n, o in _planes(P3):
+        if all(np.abs(n - m).max() > 1e-6 or abs(o - q) > 1e-6 for m, q in pl): pl.append((n, o))
+    V = []
+    for v in (np.array(v) for poly in P3 for v in poly):
+        if sum(abs(v @ n - o) < 1e-7 for n, o in pl) >= 3 and all(np.linalg.norm(v - u) > 1e-7 for u in V): V.append(v)
+    return np.array(V)
+
+def _paper_points(d, ti, poly):
+    """紙の周の頂点が、立体 ti に折ったときに行く 3D の点（周の頂点はどれかのパネルの頂点）"""
+    out = []
+    for v in poly:
+        for pan, P3 in zip(d['panels'], d['targets'][ti]['target3d']):
+            k = next((k for k, w in enumerate(pan['poly']) if abs(w[0] - v[0]) < 1e-9 and abs(w[1] - v[1]) < 1e-9), None)
+            if k is not None: out.append(P3[k]); break
+        else: raise ValueError(('周の頂点がパネルに無い', v))
+    return np.array(out)
+
+def _similarity(P, Q, scale=None):
+    """Q ≈ s R P + t（R は鏡映もありうる）。scale を渡せばその倍率で"""
+    pc, qc = P.mean(0), Q.mean(0); U, S_, Wt = np.linalg.svd((P - pc).T @ (Q - qc)); R = (U @ Wt).T
+    s = scale if scale is not None else S_.sum() / ((P - pc) ** 2).sum()
+    M = np.eye(4); M[:3, :3] = s * R; M[:3, 3] = qc - s * R @ pc
+    return M, np.abs((M[:3, :3] @ P.T).T + M[:3, 3] - Q).max()
+
+def _apply(M, P): return (M[:3, :3] @ P.T).T + M[:3, 3]
+
+def chain(sheets, out, closed=False):
+    """紙を順につなぐ。sheets: [(データのファイル, 紙の周), ...]。隣どうしは「同じ紙（周が同じ）で、前の立体 0 → 次の立体 0 を共有」か
+    「違う紙で、どちらも立体 1（等面四面体）を共有」。段階は 紙 0 の立体 0 を開く → 立体 1 に折る → 紙 1 … と進む。
+    各紙の置き方 align（相似変換）を、共有する立体がぴったり重なるよう決め、色も前の紙にそろえる。
+    closed なら最後の紙から紙 0 に戻る（最後の段階で、ずれ fix を少しずつ足して紙 0 の始めの形に重ねる）。"""
     import itertools
-    A, B = json.load(open(fa)), json.load(open(fb))
-    def area(d): return sum(abs(sum(cr(p['poly'][i], p['poly'][(i + 1) % len(p['poly'])]) for i in range(len(p['poly'])))) / 2 for p in d['panels'])
-    def tetra(d):
-        P3 = d['targets'][1]['target3d']; X = np.array([v for p in P3 for v in p]); planes = []
-        for poly in P3:
-            p0 = np.array(poly[0]); n = sum(np.cross(np.array(poly[i]) - p0, np.array(poly[(i + 1) % len(poly)]) - p0) for i in range(len(poly))); n /= np.linalg.norm(n)
-            if all(np.abs(np.array([*n, n @ p0]) - k).max() > 1e-6 for k in planes): planes.append(np.array([*n, n @ p0]))
-        V = []
-        for v in X:
-            if sum(abs(v @ q[:3] - q[3]) < 1e-7 for q in planes) >= 3 and all(np.linalg.norm(v - u) > 1e-7 for u in V): V.append(v)
-        return np.array(V)
-    VA, VB = tetra(A), tetra(B); assert len(VA) == len(VB) == 4
-    s = math.sqrt(area(A) / area(B)); best = None
-    for perm in itertools.permutations(range(4)):
-        P, Q = VB[list(perm)] * s, VA; pc, qc = P.mean(0), Q.mean(0)
-        U, S_, Wt = np.linalg.svd((P - pc).T @ (Q - qc)); R = (U @ Wt).T          # R (P - pc) ≈ Q - qc（鏡映も許す）
-        err = np.abs((R @ (P - pc).T).T - (Q - qc)).max()
-        if best is None or err < best[0]: best = (err, R, pc, qc)
-    err, R, pc, qc = best; assert err < 1e-6, err
-    Mx = np.eye(4); Mx[:3, :3] = R * s; Mx[:3, 3] = qc - R @ pc                   # world = R (s x) + (qc − R pc)
-    def planes_cols(P3, cols, M):
-        out = []
-        for poly, c in zip(P3, cols):
-            X = np.array([(M @ np.array([*v, 1]))[:3] for v in poly]); n = np.cross(X[1] - X[0], X[2] - X[0]); n /= np.linalg.norm(n); out.append((n, n @ X[0], c))
-        return out
-    pa = planes_cols(A['targets'][1]['target3d'], A['targets'][1]['colors'], np.eye(4)); newc = []
-    for n, o, _ in planes_cols(B['targets'][1]['target3d'], B['targets'][1]['colors'], Mx):   # B の面の色を、重ねた位置で同じ平面にある A の面の色に
-        newc.append(next(c for m, p, c in pa if (np.abs(m - n).max() < 1e-6 and abs(p - o) < 1e-6) or (np.abs(m + n).max() < 1e-6 and abs(p + o) < 1e-6)))
-    B['targets'][1]['colors'] = newc
-    mirror = bool(np.linalg.det(R) < 0)
-    A['chain'] = {'xname': xname, 'net': B, 'align': Mx.T.flatten().tolist(), 'mirror': mirror, 'scale': s}   # three.js の Matrix4.fromArray は列優先
-    json.dump(A, open(out, 'w')); print(out, '倍率', round(s, 6), '鏡映' if mirror else '鏡映なし', '重ねの誤差', err)
+    D = [json.load(open(f)) for f, _ in sheets]
+    area = lambda d: sum(abs(sum(cr(p['poly'][i], p['poly'][(i + 1) % len(p['poly'])]) for i in range(len(p['poly'])))) / 2 for p in d['panels'])
+    W = [np.eye(4)]; steps = []; t_cur = 0                  # 紙 0 は立体 0 から始めて、立体 1 で次の紙へ
+    order = [(0, 1)]                                         # (開く立体, 折る立体)
+    for i in range(1, len(D)):
+        a, b = D[i - 1], D[i]; ta = order[-1][1]; tb = ta    # 前の紙が最後に折った立体を、次の紙も共有する
+        if sheets[i - 1][1] == sheets[i][1]:                 # 同じ紙: 周の頂点で対応させる
+            P = _paper_points(b, tb, sheets[i][1]); Q = _apply(W[-1], _paper_points(a, ta, sheets[i - 1][1]))
+            M, err = _similarity(P, Q)
+        else:                                                # 違う紙: 四面体の頂点の並べ替えで合わせる
+            s = math.sqrt(area(a) / area(b)) * np.linalg.norm(W[-1][:3, 0])
+            VA, VB = _apply(W[-1], _corners(a, ta)), _corners(b, tb)
+            M, err = min((_similarity(VB[list(pm)], VA, s) for pm in itertools.permutations(range(len(VB)))), key=lambda r: r[1])
+        assert err < 1e-6, (i, err); W.append(M)
+        # 色: 共有する立体の面を、前の紙の色に
+        pa = list(zip(_planes(a['targets'][ta]['target3d'], W[-2]), a['targets'][ta]['colors'])); cols = []
+        for n, o in _planes(b['targets'][tb]['target3d'], M):
+            cols.append(next(c for (m, q), c in pa if np.abs(m - n).max() < 1e-6 and abs(q - o) < 1e-6 or np.abs(m + n).max() < 1e-6 and abs(q + o) < 1e-6))
+        b['targets'][tb]['colors'] = cols
+        order.append((tb, 1 - tb))
+    fix = None
+    if closed:                                               # 最後の紙の終わり（立体 order[-1][1]）を、紙 0 の始め（立体 0）に重ねるずれ
+        a, tb = D[-1], order[-1][1]; assert sheets[-1][1] == sheets[0][1] and tb == 0
+        M, err = _similarity(_apply(W[-1], _paper_points(a, tb, sheets[-1][1])), _paper_points(D[0], 0, sheets[0][1]))
+        assert err < 1e-6, err; R = M[:3, :3]
+        print('1 周のずれ: 倍率', round(float(np.cbrt(np.linalg.det(R))), 9), '鏡映' if np.linalg.det(R) < 0 else '鏡映なし', '回転角', round(math.degrees(math.acos(max(-1, min(1, (np.trace(R) - 1) / 2)))), 4), '平行移動', np.round(M[:3, 3], 6))
+        if np.abs(M - np.eye(4)).max() > 1e-9: fix = M.T.flatten().tolist()
+        pa = list(zip(_planes(a['targets'][tb]['target3d'], W[-1]), a['targets'][tb]['colors'])); cols = []   # 紙 0 の始めの色を最後に合わせる
+        for n, o in _planes(D[0]['targets'][0]['target3d'], np.linalg.inv(M) if fix else np.eye(4)):
+            cols.append(next(c for (m, q), c in pa if np.abs(m - n).max() < 1e-6 and abs(q - o) < 1e-6 or np.abs(m + n).max() < 1e-6 and abs(q + o) < 1e-6))
+        D[0]['targets'][0]['colors'] = cols
+    A = D[0]
+    A['chain'] = {'nets': D[1:], 'align': [M.T.flatten().tolist() for M in W], 'order': order, 'closed': closed, 'fix': fix,
+                  'scale': [float(np.linalg.norm(M[:3, 0])) for M in W], 'mirror': [bool(np.linalg.det(M[:3, :3]) < 0) for M in W]}
+    json.dump(A, open(out, 'w')); print(out, '紙', len(D), '倍率', [round(x, 6) for x in A['chain']['scale']], '鏡映', A['chain']['mirror'])
 
 CUBE, ICO, OCT = ('立方体', math.pi / 2, 6), ('正二十面体', math.pi - math.acos(-math.sqrt(5) / 3), 20), ('正八面体', math.pi - math.acos(-1 / 3), 8)
 
@@ -180,12 +220,14 @@ if __name__ == '__main__':
     S = json.load(open(os.path.join(F, 'cube_ico_X.json')))
     make(S['cube'], d('cube_X'), '立方体の辺展開図 → 等面四面体 X*', *CUBE)
     make(S['ico'], d('ico_X'), '正二十面体の辺展開図 → 等面四面体 X*', *ICO)
-    chain(d('cube_X'), d('ico_X'), d('cube_ico'))
     S = json.load(open(os.path.join(F, 'oct_cube_X.json')))      # 正八面体は円環を切った一般の展開図（辺展開図ではない）
     make(S['oct'], d('oct_X8'), '正八面体の展開図 → 等面四面体 X₈', *OCT, xname='X₈')
     make(S['cube'], d('cube_X8'), '立方体の辺展開図 → 等面四面体 X₈', *CUBE, xname='X₈')
-    chain(d('oct_X8'), d('cube_X8'), d('oct_cube'), 'X₈')
     S = json.load(open(os.path.join(F, 'oct_ico_X.json')))
     make(S['oct'], d('oct_X82'), '正八面体の展開図 → 等面四面体 X₈₂', *OCT, xname='X₈₂')
     make(S['ico'], d('ico_X82'), '正二十面体の辺展開図 → 等面四面体 X₈₂', *ICO, xname='X₈₂')
-    chain(d('oct_X82'), d('ico_X82'), d('oct_ico'), 'X₈₂')
+    PC, PI, PO = (json.load(open(os.path.join(F, f)))[k]['poly'] for f, k in (('cube_ico_X.json', 'cube'), ('cube_ico_X.json', 'ico'), ('oct_cube_X.json', 'oct')))
+    chain([(d('cube_X'), PC), (d('ico_X'), PI)], d('cube_ico'))
+    chain([(d('oct_X8'), PO), (d('cube_X8'), PC)], d('oct_cube'))
+    chain([(d('oct_X82'), PO), (d('ico_X82'), PI)], d('oct_ico'))
+    chain([(d('oct_X8'), PO), (d('cube_X8'), PC), (d('cube_X'), PC), (d('ico_X'), PI), (d('ico_X82'), PI), (d('oct_X82'), PO)], d('cycle3'), closed=True)

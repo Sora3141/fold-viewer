@@ -952,6 +952,19 @@
   "area_label": "三角形 24 枚"
  },
  {
+  "file": "refold_cycle3",
+  "data": "data/data_refold_cycle3.json",
+  "template": "template_chain.html",
+  "area_label": "6 手で 1 周",
+  "title": "正八面体→立方体→正二十面体→正八面体（再折りの輪）",
+  "heading": "正八面体・立方体・正二十面体を，2 手ずつの再折りで 1 周",
+  "sub": "正八面体 → X₈ → 立方体 → X* → 正二十面体 → X₈₂ → 正八面体。3 つの等面四面体を中継に，どの 2 つも 2 手でつながる",
+  "note": "3 本の 2 手の再折りをつないだ輪。等面四面体のところで別の紙に持ち替え，正多面体のところでは同じ紙のまま折り目を替える（立方体の紙は X₈ 用と X* 用で切り方が同じで，回転中心の位置だけが違う）。X*・X₈・X₈₂ は互いに相似でない。紙をぴったり重ねていくと，X* のところだけ鏡に映す必要があり，1 周すると元の正八面体の鏡像に戻る（鏡映の回数は合わせ方によらない）。そのため往復で見せている。",
+  "category": "再折り（正多面体）",
+  "order": 0,
+  "cite": "下敷き: Demaine, Demaine, Diomidova, Kamata, Uehara, Zhang, arXiv 2109.03997"
+ },
+ {
   "file": "refold_cube_X",
   "data": "data/data_refold_cube_X.json",
   "title": "立方体と等面四面体X*（再折り）",
