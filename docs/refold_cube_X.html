@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>立方体と等面四面体X*（再折り）</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#eef0f3; --bg2:#e2e5ea; --ink:#1b2027; --muted:#5f6772; --line:#c9ced6;
+  --panel:#ffffffcc; --accent:#c8332b; --accent-ink:#ffffff; --chip:#ffffff; --chip-on:#1b2027;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181d; --bg2:#0f1114; --ink:#e8eaee; --muted:#9aa3ad; --line:#2c323a;
+    --panel:#1c2026dd; --accent:#e0554a; --accent-ink:#ffffff; --chip:#22272e; --chip-on:#e8eaee;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181d; --bg2:#0f1114; --ink:#e8eaee; --muted:#9aa3ad; --line:#2c323a;
+  --panel:#1c2026dd; --accent:#e0554a; --accent-ink:#ffffff; --chip:#22272e; --chip-on:#e8eaee;
+}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;overflow:hidden}
+#stage{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 60%,var(--bg) 0%,var(--bg2) 100%)}
+#stage canvas{display:block;outline:none;touch-action:none;-webkit-user-select:none;user-select:none}
+html,body{overscroll-behavior:none;-webkit-touch-callout:none}
+.bar{position:fixed;left:0;right:0;display:flex;align-items:center;gap:12px;padding:12px 18px;pointer-events:none}
+.bar > *{pointer-events:auto}
+#top{top:0;align-items:flex-start;padding-top:calc(12px + env(safe-area-inset-top,0px))}
+.title{display:flex;align-items:flex-start;gap:10px;min-width:0;flex:1 1 auto}
+.home{flex:0 0 auto;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--chip);color:var(--ink);text-decoration:none;font-size:16px}
+.home:hover{border-color:var(--accent)}
+h1{font-size:15px;font-weight:700;margin:0;letter-spacing:.02em;line-height:1.4}
+h1 small{display:block;font-weight:500;color:var(--muted);font-size:12px;margin-top:2px;max-width:60ch}
+.chips{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;max-width:56vw;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin;padding:2px 2px 4px}
+.chip{flex:0 0 auto;white-space:nowrap;scroll-snap-align:start;display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.chip .n{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;color:var(--muted)}
+.chip:hover{border-color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--chip-on);color:var(--bg);border-color:var(--chip-on)}
+.chip[aria-pressed="true"] .n{color:inherit;opacity:.7}
+.chip:focus-visible,button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#bottom{bottom:0;flex-direction:column;align-items:stretch;gap:8px;background:linear-gradient(to top,var(--bg) 55%,transparent);padding-top:32px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+.row{display:flex;align-items:center;gap:12px;max-width:760px;width:100%;margin:0 auto}
+#state{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;color:var(--muted);white-space:nowrap;min-width:4.5em;text-align:right}
+.label{font-weight:700;font-size:14px;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+button.play{flex:0 0 auto;display:grid;place-items:center;width:44px;height:44px;background:var(--accent);color:var(--accent-ink);border:0;border-radius:50%;cursor:pointer;box-shadow:0 2px 8px #0003}
+button.play svg{width:18px;height:18px;fill:currentColor}
+button.play .pause,button.play[aria-pressed="true"] .go{display:none}
+button.play[aria-pressed="true"] .pause{display:block}
+button.ghost{flex:0 0 auto;border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
+button.ghost:hover{border-color:var(--ink)}
+#t{flex:1 1 auto;min-width:0;accent-color:var(--accent);height:28px}
+.opts{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.opts label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.opts .sp{margin-left:auto}
+#speed{width:80px;accent-color:var(--accent)}
+.help{position:fixed;right:18px;top:calc(64px + env(safe-area-inset-top,0px));background:var(--panel);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--muted);width:min(280px,calc(100vw - 36px));line-height:1.6;box-shadow:0 6px 24px #0002}
+.help p{margin:0 0 8px} .help p:last-child{margin:0}
+.help .note{color:var(--ink);font-size:13px}
+.help kbd{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 4px;background:var(--chip)}
+#stage canvas{cursor:grab} #stage canvas:active{cursor:grabbing}
+@media (max-width:640px){
+  #top{flex-wrap:wrap;gap:8px}
+  h1 small{display:none}
+  .chips{max-width:100%;width:100%;mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent)}
+  .help{top:auto;bottom:calc(150px + env(safe-area-inset-bottom,0px));right:12px;left:12px;width:auto}
+  .opts{gap:10px}
+}
+@media (prefers-reduced-motion: reduce){ body{--dur:0} }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div class="bar" id="top">
+  <div class="title"><a class="home" href="./" aria-label="一覧へ戻る" title="一覧へ戻る">←</a><h1>立方体の辺展開図が，等面四面体 X* にも折れる<small>立方体の辺展開図（3-3 の階段形）を，回転中心を無理数の位置に置いた Conway の分け方で等面四面体 X* に折る　／　出典：下敷き: Demaine, Demaine, Diomidova, Kamata, Uehara, Zhang, arXiv 2109.03997（どの正多面体どうしも 6 手以内）</small></h1></div>
+  <div class="chips" id="chips" role="group" aria-label="折る立体"></div>
+</div>
+<div class="help" id="help" hidden>
+  <p class="note">立方体の辺展開図と正二十面体の辺展開図は，同じ等面四面体 X*（面の三角形の辺の比 1 : 1.3873 : 1.4692）に折れる。論文（Demaine ほか 2021）では立方体→正二十面体の再折りは等面四面体 2 つを経由する 3 手だったが，行き先を同じ X* にそろえて 2 手にした。四面体の折り線は回転中心の格子の直線で，紙のマスを斜めに横切る。</p>
+  <p>ドラッグで回転、ホイール・ピンチで拡大、ダブルクリックで視点を戻す。<kbd>Space</kbd> 再生　<kbd>←</kbd><kbd>→</kbd> 立体を切り替え</p>
+  <p>黒い線は紙の縁といま折る折り目、薄い線はマスの境目（この折り方では平ら）。ほかの立体の折り目は出していません。折り目の角度を一斉に動かしているので、途中で面が重なって見えることがあります。</p>
+</div>
+<div class="bar" id="bottom">
+  <div class="row">
+    <button class="play" id="play" aria-label="再生" aria-pressed="false"><svg class="go" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg><svg class="pause" viewBox="0 0 24 24"><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/></svg></button>
+    <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px">
+      <div style="display:flex;gap:8px;align-items:baseline"><span class="label" id="label">—</span><span id="state">0%</span></div>
+      <input type="range" id="t" min="0" max="1000" value="0" aria-label="折り進み">
+    </div>
+  </div>
+  <div class="row opts">
+    <label><input type="checkbox" id="loop" checked> 全部の立体を順に</label>
+    <label><input type="checkbox" id="colors" checked> 面に色</label>
+    <label class="sp">速さ <input type="range" id="speed" min="1" max="10" value="6" aria-label="速さ"></label>
+    <button class="ghost" id="helpBtn" aria-expanded="false" aria-controls="help">説明</button>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const DATA={"title": "立方体の辺展開図 → 等面四面体 X*", "cells": [[-1.0, 0.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [2.0, 1.0], [3.0, 1.0]], "panels": [{"poly": [[0.0, 0.2595583612801352], [0.0, 1.0], [-0.21271659510067709, 1.0]]}, {"poly": [[-1.0, 0.0], [0.0, 0.0], [0.0, 0.2595583612801352], [-0.21271659510067709, 1.0], [-0.9627165951006771, 1.0], [-1.0, 0.9194249670444371]]}, {"poly": [[-0.9627165951006771, 1.0], [-1.0, 1.0], [-1.0, 0.9194249670444371]]}, {"poly": [[0.07456680979864583, 0.0], [1.0, 0.0], [1.0, 1.0], [0.5372834048993229, 1.0]]}, {"poly": [[0.07456680979864583, 0.0], [0.5372834048993229, 1.0], [0.0, 1.0], [0.0, 0.2595583612801352]]}, {"poly": [[0.0, 0.0], [0.07456680979864583, 0.0], [0.0, 0.2595583612801352]]}, {"poly": [[1.5745668097986458, 0.0], [2.0, 0.0], [2.0, 0.9194249670444371]]}, {"poly": [[1.5745668097986458, 0.0], [2.0, 0.9194249670444371], [2.0, 1.0], [1.287283404899323, 1.0]]}, {"poly": [[1.0, 0.0], [1.5745668097986458, 0.0], [1.287283404899323, 1.0], [1.0, 1.0]]}, {"poly": [[1.287283404899323, 1.0], [2.0, 1.0], [2.0, 2.0], [1.0, 2.0]]}, {"poly": [[1.0, 1.0], [1.287283404899323, 1.0], [1.0, 2.0]]}, {"poly": [[2.787283404899323, 1.0], [3.0, 1.0], [3.0, 2.0], [2.5, 2.0]]}, {"poly": [[2.037283404899323, 1.0], [2.787283404899323, 1.0], [2.5, 2.0]]}, {"poly": [[2.0, 1.0], [2.037283404899323, 1.0], [2.5, 2.0], [2.0, 2.0]]}, {"poly": [[3.537283404899323, 1.0], [4.0, 1.0], [4.0, 2.0]]}, {"poly": [[3.0, 1.0], [3.537283404899323, 1.0], [4.0, 2.0], [3.0, 2.0]]}], "parent": [-1, 0, 1, 4, 0, 4, 7, 8, 3, 7, 8, 12, 13, 9, 15, 11], "hinge": [[[0, 0], [0, 0]], [[-0.21271659510067709, 1.0], [0.0, 0.2595583612801352]], [[-1.0, 0.9194249670444371], [-0.9627165951006771, 1.0]], [[0.07456680979864583, 0.0], [0.5372834048993229, 1.0]], [[0.0, 0.2595583612801352], [0.0, 1.0]], [[0.0, 0.2595583612801352], [0.07456680979864583, 0.0]], [[1.5745668097986458, 0.0], [2.0, 0.9194249670444371]], [[1.287283404899323, 1.0], [1.5745668097986458, 0.0]], [[1.0, 0.0], [1.0, 1.0]], [[1.287283404899323, 1.0], [2.0, 1.0]], [[1.0, 1.0], [1.287283404899323, 1.0]], [[2.5, 2.0], [2.787283404899323, 1.0]], [[2.037283404899323, 1.0], [2.5, 2.0]], [[2.0, 1.0], [2.0, 2.0]], [[3.537283404899323, 1.0], [4.0, 2.0]], [[3.0, 1.0], [3.0, 2.0]]], "order": [0, 4, 1, 3, 5, 2, 8, 7, 10, 6, 9, 13, 12, 11, 15, 14], "targets": [{"label": "立方体", "theta": [0.0, 0.0, 0.0, 0.0, 1.5707963267948966, 0.0, 0.0, 0.0, 1.5707963267948966, -1.5707963267948966, -1.5707963267948966, 0.0, 0.0, 1.5707963267948966, 0.0, 1.5707963267948966], "colors": ["#f2b9b9", "#f2b9b9", "#f2b9b9", "#96ecaf", "#96ecaf", "#96ecaf", "#b674e6", "#b674e6", "#b674e6", "#f2ebb9", "#f2ebb9", "#96deec", "#96deec", "#96deec", "#e674b2", "#e674b2"], "target3d": [[[0.0, 0.2595583612801352, 0.0], [0.0, 1.0, 0.0], [-0.21271659510067709, 1.0, 0.0]], [[-1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.2595583612801352, 0.0], [-0.21271659510067709, 1.0, 0.0], [-0.9627165951006771, 1.0, 0.0], [-1.0, 0.9194249670444371, 0.0]], [[-0.9627165951006771, 1.0, 0.0], [-1.0, 1.0, 0.0], [-1.0, 0.9194249670444371, 0.0]], [[8.278578911130133e-18, 0.0, -0.07456680979864583], [1.1102230246251565e-16, 0.0, -1.0], [1.1102230246251565e-16, 1.0, -1.0], [5.965044068682289e-17, 1.0, -0.5372834048993229]], [[8.278578911130133e-18, 0.0, -0.07456680979864583], [5.965044068682289e-17, 1.0, -0.5372834048993229], [0.0, 1.0, 0.0], [0.0, 0.2595583612801352, 0.0]], [[0.0, 0.0, 0.0], [8.278578911130133e-18, 0.0, -0.07456680979864583], [0.0, 0.2595583612801352, 0.0]], [[-0.5745668097986458, 0.0, -1.0000000000000002], [-1.0, 0.0, -1.0000000000000002], [-1.0, 0.9194249670444371, -1.0000000000000002]], [[-0.5745668097986458, 0.0, -1.0000000000000002], [-1.0, 0.9194249670444371, -1.0000000000000002], [-1.0, 1.0, -1.0000000000000002], [-0.2872834048993229, 1.0, -1.0]], [[0.0, 0.0, -1.0], [-0.5745668097986458, 0.0, -1.0000000000000002], [-0.2872834048993229, 1.0, -1.0], [0.0, 1.0, -1.0]], [[-0.2872834048993227, 0.9999999999999999, -1.0], [-0.9999999999999998, 0.9999999999999998, -1.0000000000000002], [-1.0000000000000002, 1.0, -1.7900447549808237e-16], [-2.220446049250313e-16, 1.0000000000000002, 1.3254236717599012e-16]], [[0.0, 1.0, -1.0], [-0.2872834048993229, 1.0, -1.0], [0.0, 1.0, -2.465190328815662e-32]], [[-1.0, 0.21271659510067664, -0.9999999999999999], [-1.0, -4.440892098500626e-16, -0.9999999999999998], [-1.0000000000000004, 0.0, 1.7558249660293906e-16], [-1.0000000000000004, 0.5, -1.710989447571655e-18]], [[-1.0, 0.9627165951006766, -1.0000000000000002], [-1.0, 0.21271659510067664, -0.9999999999999999], [-1.0000000000000004, 0.5, -1.710989447571655e-18]], [[-1.0, 0.9999999999999996, -1.0000000000000002], [-1.0, 0.9627165951006766, -1.0000000000000002], [-1.0000000000000004, 0.5, -1.710989447571655e-18], [-1.0000000000000004, 1.0, -1.7900447549808237e-16]], [[-0.46271659510067664, -8.01906823245248e-16, -0.9999999999999997], [4.440892098500626e-16, -8.632363760915057e-16, -0.9999999999999994], [0.0, -3.081248637789274e-16, 5.301694687039607e-16]], [[-0.9999999999999996, -7.3069400891551595e-16, -0.9999999999999998], [-0.46271659510067664, -8.01906823245248e-16, -0.9999999999999997], [0.0, -3.081248637789274e-16, 5.301694687039607e-16], [-1.0, -1.7558249660293773e-16, 1.7558249660293926e-16]]]}, {"label": "等面四面体 X*", "theta": [0.0, 1.9131952789448459, -1.5008531573860886, 1.5008531573860886, 0.0, 1.9131952789448459, 1.5008531573860886, -1.9131952789448459, 0.0, 0.0, 0.0, -1.9131952789448459, 1.5008531573860886, 0.0, 1.5008531573860886, 0.0], "colors": ["#f2b9b9", "#96ecaf", "#b674e6", "#f2ebb9", "#f2b9b9", "#96ecaf", "#96ecaf", "#b674e6", "#f2ebb9", "#b674e6", "#f2ebb9", "#f2b9b9", "#96ecaf", "#b674e6", "#f2ebb9", "#f2b9b9"], "target3d": [[[0.0, 0.2595583612801352, 0.0], [0.0, 1.0, 0.0], [-0.21271659510067709, 1.0, 0.0]], [[0.3259197211686029, 0.38091473212047705, -0.9728409476991965], [0.09200880090013118, 0.02643260160329354, -0.067507804307685], [1.3877787807814457e-17, 0.2595583612801352, -1.3877787807814457e-17], [-0.21271659510067709, 1.0, 0.0], [-0.0372834048993233, 1.2658615978878878, -0.6789998575436337], [-3.885780586188048e-16, 1.20670837194376, -0.7337102934420344]], [[-0.03728340489932336, 1.2658615978878878, -0.6789998575436337], [-4.440892098500626e-16, 1.2658615978878878, -0.6789998575436337], [-2.220446049250313e-16, 1.2067083719437601, -0.7337102934420344]], [[0.07456680979864583, 0.0, 0.0], [0.2910357389656324, 0.32804952891389016, -0.8378253390838263], [0.6455178694828162, 1.164024764456945, -0.4189126695419132], [0.5372834048993229, 1.0, -5.551115123125783e-17]], [[0.07456680979864583, 0.0, 0.0], [0.5372834048993229, 1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.2595583612801352, 0.0]], [[0.0920088009001312, 0.026432601603293582, -0.067507804307685], [0.07456680979864584, 3.469446951953614e-18, 0.0], [0.0, 0.2595583612801352, 0.0]], [[0.4254331902013537, 0.5317231957757754, -1.3579997150872671], [0.325919721168603, 0.38091473212047744, -0.9728409476991964], [-2.220446049250313e-16, 1.2067083719437606, -0.7337102934420343]], [[0.42543319020135373, 0.5317231957757755, -1.357999715087267], [0.0, 1.2067083719437603, -0.7337102934420343], [0.0, 1.2658615978878882, -0.6789998575436336], [0.7127165951006771, 1.2658615978878878, -0.6789998575436337]], [[0.2910357389656324, 0.32804952891389016, -0.8378253390838263], [0.42543319020135373, 0.5317231957757755, -1.357999715087267], [0.7127165951006769, 1.2658615978878878, -0.6789998575436336], [0.6455178694828162, 1.164024764456945, -0.4189126695419132]], [[0.7127165951006771, 1.2658615978878878, -0.6789998575436337], [0.0, 1.2658615978878882, -0.6789998575436336], [2.220446049250313e-16, 2.0000000000000004, -2.220446049250313e-16], [1.0, 2.0, -3.3306690738754696e-16]], [[0.6455178694828162, 1.164024764456945, -0.4189126695419132], [0.7127165951006769, 1.2658615978878878, -0.6789998575436336], [1.0, 2.0, 0.0]], [[-0.21271659510067753, 1.0000000000000009, 3.69101061914306e-16], [-4.440892098500626e-16, 1.0000000000000009, 4.163336342344337e-16], [0.0, 2.000000000000001, 1.6653345369377348e-16], [-0.5, 2.000000000000001, 5.551115123125783e-17]], [[-0.0372834048993228, 1.2658615978878882, -0.6789998575436333], [-0.21271659510067686, 1.0000000000000009, 4.440892098500626e-16], [-0.49999999999999967, 2.0000000000000013, 0.0]], [[0.0, 1.2658615978878882, -0.6789998575436336], [-0.03728340489932269, 1.2658615978878882, -0.6789998575436336], [-0.49999999999999956, 2.000000000000001, -1.6653345369377348e-16], [2.220446049250313e-16, 2.0000000000000004, -2.220446049250313e-16]], [[0.5372834048993225, 1.0000000000000009, 4.440892098500626e-16], [0.6455178694828159, 1.1640247644569457, -0.41891266954191275], [0.9999999999999999, 2.000000000000001, 4.440892098500626e-16]], [[-4.440892098500626e-16, 1.0000000000000009, 4.163336342344337e-16], [0.5372834048993225, 1.0000000000000009, 5.356345156080795e-16], [1.0, 2.000000000000001, 3.885780586188048e-16], [0.0, 2.000000000000001, 1.6653345369377348e-16]]]}]};
+(function(){
+const T=window.THREE; const stage=document.getElementById('stage');
+const renderer=new T.WebGLRenderer({antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); stage.appendChild(renderer.domElement);
+const scene=new T.Scene(); const camera=new T.PerspectiveCamera(38,1,0.1,500);
+const group=new T.Group(); scene.add(group); group.rotation.z=DATA.spin||0;   // 分割展開図: 長い方を画面の横に向ける
+// panels
+const panels=DATA.panels.map((p,i)=>{
+  const shape=new T.Shape(p.poly.map(v=>new T.Vector2(v[0],v[1])));
+  const geo=new T.ShapeGeometry(shape);
+  const mat=new T.MeshBasicMaterial({color:0xffffff,side:T.DoubleSide});   // flat colour, no lighting
+  const mesh=new T.Mesh(geo,mat); mesh.matrixAutoUpdate=false;
+  const mk=(color,op,lw)=>{ const l=new T.LineSegments(new T.BufferGeometry(),new T.LineBasicMaterial({color,transparent:true,opacity:op,linewidth:lw})); l.matrixAutoUpdate=false; group.add(l); return l; };
+  const edge={bnd:mk(0x1b2027,0.95,1),crease:mk(0x1b2027,0.95,1),flat:mk(0x1b2027,0.18,1)};   // boundary + crease = black, other lines faint
+  group.add(mesh); return {mesh,edge,poly:p.poly};
+});
+// ---- edge classification: boundary / crease (folded in the current target) / flat (coplanar in the current target)
+const EPS=1e-6;
+function onSeg(m,a,b){ const cr=(b[0]-a[0])*(m[1]-a[1])-(b[1]-a[1])*(m[0]-a[0]); if(Math.abs(cr)>1e-6) return false;
+  return Math.min(a[0],b[0])-1e-6<=m[0]&&m[0]<=Math.max(a[0],b[0])+1e-6&&Math.min(a[1],b[1])-1e-6<=m[1]&&m[1]<=Math.max(a[1],b[1])+1e-6; }
+const panelEdges=DATA.panels.map((p,i)=>{ const n=p.poly.length; return p.poly.map((v,k)=>({a:v,b:p.poly[(k+1)%n],partner:-1})); });
+for(let i=0;i<panelEdges.length;i++) for(const e of panelEdges[i]){ const m=[(e.a[0]+e.b[0])/2,(e.a[1]+e.b[1])/2];
+  outer: for(let j=0;j<panelEdges.length;j++){ if(j===i) continue; for(const f of panelEdges[j]){ if(onSeg(m,f.a,f.b)&&onSeg(e.a,f.a,f.b)&&onSeg(e.b,f.a,f.b)||onSeg(m,f.a,f.b)&&onSeg(f.a,e.a,e.b)&&onSeg(f.b,e.a,e.b)){ e.partner=j; break outer; } } } }
+function normalOf(poly3){ const [a,b,c]=[poly3[0],poly3[1],poly3[2]]; const u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]], v=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
+  const n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]]; const L=Math.hypot(...n)||1; return n.map(x=>x/L); }
+const isInt=x=>Math.abs(x-Math.round(x))<1e-6;
+function onGrid(e){ return (isInt(e.a[0])&&Math.abs(e.a[0]-e.b[0])<1e-6)||(isInt(e.a[1])&&Math.abs(e.a[1]-e.b[1])<1e-6); }   // マスの境目（整数の縦線・横線の上）
+function classifyEdges(ti){
+  const T3=DATA.targets[ti].target3d, cut=DATA.targets[ti].cut; const N=T3.map(normalOf);   // cut = パネルごとの部品番号（分割展開図）。部品の境目は紙の縁として濃く描く
+  panels.forEach((p,i)=>{ const sets={bnd:[],crease:[],flat:[]};
+    for(const e of panelEdges[i]){ let kind='bnd';
+      if(e.partner>=0&&!(cut&&cut[e.partner]!==cut[i])){ const a=N[i],b=N[e.partner]; const dot=a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+        // coplanar iff normals parallel and the partner's centroid lies in this panel's plane
+        const c=T3[e.partner][0], p0=T3[i][0]; const d=(c[0]-p0[0])*a[0]+(c[1]-p0[1])*a[1]+(c[2]-p0[2])*a[2];
+        kind=(Math.abs(dot-1)<1e-6&&Math.abs(d)<1e-6)?'flat':'crease'; }
+      if(kind==='flat'&&!onGrid(e)) continue;   // 他の立体だけの折り目は描かない（マスの境目だけ薄く残す）
+      sets[kind].push(e.a[0],e.a[1],0,e.b[0],e.b[1],0); }
+    for(const k in sets){ p.edge[k].geometry.dispose(); const g=new T.BufferGeometry(); g.setAttribute('position',new T.Float32BufferAttribute(sets[k],3)); p.edge[k].geometry=g; }
+  });
+}
+// flat layout centre
+let cx=0,cy=0,n=0; DATA.cells.forEach(c=>{cx+=c[0]+0.5;cy+=c[1]+0.5;n++}); cx/=n; cy/=n;
+const ext=Math.max(...DATA.cells.map(c=>Math.max(Math.abs(c[0]+0.5-cx),Math.abs(c[1]+0.5-cy))))+1;
+// state
+let target=0, t=0, dir=1, playing=false, phase='fold';   // start flat and paused // fold -> hold -> unfold -> switch
+const speedEl=document.getElementById('speed'), loopEl=document.getElementById('loop'), tEl=document.getElementById('t'), stateEl=document.getElementById('state'), playBtn=document.getElementById('play');
+const chips=document.getElementById('chips');
+const labelEl=document.getElementById('label');
+function setPlaying(v){ playing=v; playBtn.setAttribute('aria-pressed',v); playBtn.setAttribute('aria-label',v?'一時停止':'再生'); }
+function pick(i){ setTarget(i); t=0; phase='fold'; setPlaying(false); tEl.value=0; chips.children[i].scrollIntoView({block:'nearest',inline:'nearest'}); }
+DATA.targets.forEach((tg,i)=>{ const b=document.createElement('button'); b.className='chip'; b.innerHTML='<span class="n">'+(i+1)+'</span>'; b.append(tg.label); b.setAttribute('aria-pressed',i===0); b.onclick=()=>pick(i); chips.appendChild(b); });
+const helpEl=document.getElementById('help'), helpBtn=document.getElementById('helpBtn');
+function showHelp(v){ helpEl.hidden=!v; helpBtn.setAttribute('aria-expanded',v); }
+helpBtn.onclick=()=>showHelp(helpEl.hidden);
+showHelp(innerWidth>640);
+const colorsEl=document.getElementById('colors'); const PLAIN='#f4f3ee';
+function applyColors(){ const cols=DATA.targets[target].colors; panels.forEach((p,k)=>p.mesh.material.color.set(colorsEl.checked?cols[k]:PLAIN)); }
+function setTarget(i){ target=i; [...chips.children].forEach((c,j)=>c.setAttribute('aria-pressed',j===i)); labelEl.textContent=DATA.targets[i].label; applyColors(); classifyEdges(i); }
+colorsEl.addEventListener('change',applyColors);
+setTarget(0);
+const M=DATA.panels.map(()=>new T.Matrix4()); const tmpA=new T.Matrix4(), tmpB=new T.Matrix4(), v0=new T.Vector3(), v1=new T.Vector3(), ax=new T.Vector3();
+function pose(tt){
+  const tg=DATA.targets[target], th=tg.theta, par=tg.parent||DATA.parent, hin=tg.hinge||DATA.hinge;   // 目標が木を持つなら（部品ごとの森）それを使う
+  for(const c of (tg.order||DATA.order)){ const p=par[c]; const h=hin[c];
+    if(p<0){ const r=tg.roots&&tg.roots[c]; if(r) M[c].makeTranslation(r[0][0]+(r[1][0]-r[0][0])*tt,r[0][1]+(r[1][1]-r[0][1])*tt,r[0][2]+(r[1][2]-r[0][2])*tt); else M[c].identity(); continue; }
+    v0.set(h[0][0],h[0][1],0).applyMatrix4(M[p]); v1.set(h[1][0],h[1][1],0).applyMatrix4(M[p]); ax.subVectors(v1,v0).normalize();
+    tmpA.makeRotationAxis(ax,tt*th[c]); tmpB.makeTranslation(v0.x,v0.y,v0.z); tmpA.premultiply(tmpB); tmpB.makeTranslation(-v0.x,-v0.y,-v0.z); tmpA.multiply(tmpB);
+    M[c].multiplyMatrices(tmpA,M[p]); }
+  // centre of mass of vertices
+  const cen=new T.Vector3(); let k=0; const vv=new T.Vector3();
+  panels.forEach((p,i)=>{ for(const v of p.poly){ vv.set(v[0],v[1],0).applyMatrix4(M[i]); cen.add(vv); k++; } }); cen.multiplyScalar(1/k);
+  const shift=new T.Matrix4().makeTranslation(-cen.x,-cen.y,-cen.z);
+  panels.forEach((p,i)=>{ p.mesh.matrix.multiplyMatrices(shift,M[i]); for(const k in p.edge) p.edge[k].matrix.copy(p.mesh.matrix); });
+}
+// camera & orbit
+const YAW0=0.6, PITCH0=0.55; let yaw=YAW0, pitch=PITCH0, dist=1; const fitDist=()=>ext*1.3/(Math.tan(camera.fov*Math.PI/360)*Math.min(1,camera.aspect)); function cam(){ camera.position.set(dist*Math.cos(pitch)*Math.sin(yaw),dist*Math.sin(pitch),dist*Math.cos(pitch)*Math.cos(yaw)); camera.lookAt(0,0,0); }
+// pointer handling: 1 finger/mouse = rotate, 2 fingers = pinch zoom (touch-action:none keeps the page from scrolling)
+const ptrs=new Map(); let pinch0=null;
+const el=renderer.domElement;
+el.addEventListener('pointerdown',e=>{ e.preventDefault(); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); try{ el.setPointerCapture(e.pointerId); }catch(_){} if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinch0={d:Math.hypot(a.x-b.x,a.y-b.y),dist}; } });
+el.addEventListener('pointermove',e=>{ if(!ptrs.has(e.pointerId)) return; e.preventDefault();
+  if(ptrs.size===1){ const p=ptrs.get(e.pointerId); yaw-=(e.clientX-p.x)*0.008; pitch=Math.max(-1.4,Math.min(1.4,pitch+(e.clientY-p.y)*0.008)); }
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2 && pinch0){ const [a,b]=[...ptrs.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); dist=Math.max(ext*0.8,Math.min(ext*12,pinch0.dist*pinch0.d/Math.max(d,1))); } });
+const release=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) pinch0=null; };
+el.addEventListener('dblclick',()=>{ yaw=YAW0; pitch=PITCH0; dist=fitDist(); });
+el.addEventListener('pointerup',release); el.addEventListener('pointercancel',release); el.addEventListener('lostpointercapture',release);
+['touchstart','touchmove'].forEach(t=>el.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+renderer.domElement.addEventListener('wheel',e=>{ e.preventDefault(); dist=Math.max(ext*0.8,Math.min(ext*12,dist*(1+e.deltaY*0.001))); },{passive:false});
+function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); dist=fitDist(); } addEventListener('resize',resize); resize();
+// controls
+// a finished one-shot run (or a fully folded paused sheet) replays from flat
+playBtn.onclick=()=>{ if(!playing&&(phase==='done'||t>=1&&phase==='fold')){ t=0; phase='fold'; } setPlaying(!playing); };
+tEl.addEventListener('input',()=>{ setPlaying(false); t=tEl.value/1000; phase='fold'; });
+addEventListener('keydown',e=>{ const n=DATA.targets.length, onCtl=/^(INPUT|BUTTON|A)$/.test(e.target.tagName);
+  if(e.key===' '&&!onCtl){ e.preventDefault(); playBtn.click(); }
+  else if(e.key==='ArrowRight'&&e.target.type!=='range'){ e.preventDefault(); pick((target+1)%n); }
+  else if(e.key==='ArrowLeft'&&e.target.type!=='range'){ e.preventDefault(); pick((target+n-1)%n); }
+  else if(e.key==='Escape') showHelp(false); });
+const ease=x=>x;   // linear: constant folding speed
+let hold=0, last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(playing){ const sp=speedEl.value*0.08;
+    if(phase==='fold'){ t+=sp*dt; if(t>=1){t=1; phase='hold'; hold=0;} }
+    else if(phase==='hold'){ hold+=dt; if(hold>1.2){ phase=loopEl.checked?'unfold':'done'; } }
+    else if(phase==='unfold'){ t-=sp*dt; if(t<=0){ t=0; phase='switch'; hold=0; } }
+    else if(phase==='switch'){ hold+=dt; if(hold>0.5){ setTarget((target+1)%DATA.targets.length); phase='fold'; } }
+    tEl.value=Math.round(t*1000);
+  }
+  pose(ease(t)); cam();
+  stateEl.textContent=Math.round(t*100)+'%';
+  renderer.render(scene,camera); requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
