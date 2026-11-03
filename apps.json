@@ -1026,5 +1026,17 @@
   "category": "再折り（正多面体）",
   "order": 0,
   "cite": "下敷き: Demaine, Demaine, Diomidova, Kamata, Uehara, Zhang, arXiv 2109.03997"
+ },
+ {
+  "file": "refold_tt_regular",
+  "data": "data/data_refold_tt_regular.json",
+  "area_label": "三角形 28 枚",
+  "title": "切頂四面体と正四面体（共通展開図）",
+  "heading": "切頂四面体の展開図が，辺 √7 の正四面体にも折れる",
+  "sub": "切頂四面体を，辺と六角形の中心からの線分で切って開いた展開図（三角形 28 枚）。同じ紙が辺 √7 の正四面体にも折れる",
+  "note": "切り方は辺展開図ではなく，六角形の中心を通る線分も切る。展開図の周は Conway の条件を満たし，4 つの回転中心が正四面体の頂点になる。正四面体の折り線は三角格子の線ではなく，回転中心の格子の直線（長さ √7）で紙のマスを斜めに横切る。辺展開図に限ると，切頂四面体を含むアルキメデスの立体は正四面体に折れない（Araki–Horiyama–Uehara 2016）。",
+  "category": "再折り（正多面体）",
+  "order": 3,
+  "cite": "Conway の条件 ⇒ 等面四面体: Akiyama–Matsunaga 2020。辺展開図の場合: Araki, Horiyama, Uehara, JGAA 20(1), 2016"
  }
 ]

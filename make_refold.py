@@ -91,6 +91,7 @@ def make(net, out, title, solid, th_solid, nfaces, xname='X*'):
     adj = {}
     for i, ei in enumerate(E):
         for e in ei:
+            if math.dist(e[0], e[1]) < 1e-6: continue   # 直線が格子点のすぐ横を通ってできる長さ 0 に近い辺は、折り目にしない（向きが定まらない）
             m = ((e[0][0] + e[1][0]) / 2, (e[0][1] + e[1][1]) / 2)
             for o, eo in enumerate(E):
                 if o == i: continue
@@ -117,7 +118,9 @@ def make(net, out, title, solid, th_solid, nfaces, xname='X*'):
     def th_tetra(c):
         d = on_line(c, list(zip(dirs, others)), c1)
         return 0.0 if d is None else sgn(c) * (math.pi - dih(float(np.linalg.norm(d))))
-    thetas = [{c: (sgn(c) * th_solid if on_line(c, G, np.zeros(2)) is not None else 0.0) for c in order[1:]},
+    if callable(th_solid): th_s = lambda c: sgn(c) * th_solid(hinge[c])   # 折り目ごとに角が違う立体（切頂四面体など）。外向き法線のなす角を返す
+    else: th_s = lambda c: sgn(c) * th_solid if on_line(c, G, np.zeros(2)) is not None else 0.0
+    thetas = [{c: th_s(c) for c in order[1:]},
               {c: th_tetra(c) for c in order[1:]}]
     targets = []
     for lab, th, nf in zip([solid, '等面四面体 ' + xname], thetas, [nfaces, 4]):
